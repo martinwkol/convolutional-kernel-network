@@ -40,8 +40,8 @@ class layer:
         x_patch_radius = (self._patch_size[0] - 1) // 2
         y_patch_radius = (self._patch_size[1] - 1) // 2
 
-        patch_range_x = range( -x_patch_radius, x_patch_radius + 1 )
-        patch_range_y = range( -y_patch_radius, y_patch_radius + 1 )
+        x_diff_range = range( -x_patch_radius, x_patch_radius + 1 )
+        y_diff_range = range( -y_patch_radius, y_patch_radius + 1 )
 
         x_offset = 0 if self._use_zero_padding else x_patch_radius
         y_offset = 0 if self._use_zero_padding else y_patch_radius
@@ -50,8 +50,8 @@ class layer:
         patch_mx = np.zeros((channels * self._patch_size[0] * self._patch_size[1], patch_mx_size[0] * patch_mx_size[1]))
 
         current_patch_mx_row = 0
-        for y_diff in patch_range_y:
-            for x_diff in patch_range_x:
+        for y_diff in y_diff_range:
+            for x_diff in x_diff_range:
                 if self._use_zero_padding:
                     patch_mx_x_range = range(max(0, -x_diff), patch_mx_size[0] + min(0, -x_diff))
                     patch_mx_y_range = range(max(0, -y_diff), patch_mx_size[1] + min(0, -y_diff))

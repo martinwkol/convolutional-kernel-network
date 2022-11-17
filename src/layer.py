@@ -34,6 +34,10 @@ class layer:
     def dp_kernel(self):
         return self._dp_kernel
 
+    @property
+    def zero_padding(self):
+        return self._zero_padding
+
     def extract_patches(self, input):
         x_filter_radius = (self._filter_size[0] - 1) // 2
         y_filter_radius = (self._filter_size[1] - 1) // 2
@@ -77,11 +81,9 @@ class layer:
                             self._input_size[0] + self._zero_padding[0] * 2 - x_filter_radius * 2,
                             self._input_size[1] + self._zero_padding[1] * 2 - y_filter_radius * 2))
 
-        result_mx_size = (self._num_channels, 
-                        self._input_size[0] + self._zero_padding[0] * 2, 
-                        self._input_size[1] + self._zero_padding[1] * 2)
-
-        result_mx = np.zeros(result_mx_size)
+        result_mx = np.zeros((self._num_channels, 
+                            self._input_size[0] + self._zero_padding[0] * 2, 
+                            self._input_size[1] + self._zero_padding[1] * 2))
 
         x_diff_range = range(x_filter_radius * 2 + 1)
         y_diff_range = range(y_filter_radius * 2 + 1)

@@ -96,13 +96,12 @@ class LayerTest(unittest.TestCase):
             pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
             zero_padding=(0, 0)
         )
-        patched = np.array([
-            [
-                1, 0,   1, 3,   1, 0,
-                1, 3,   1, 0,   1, 3,
-                1, 0,   1, 3,   1, 0,
-            ]
-        ]).transpose()
+        
+        patched = l.extract_patches(np.array([
+            [1, 0],     [1, 3],     [1, 0], 
+            [1, 3],     [1, 0],     [1, 3], 
+            [1, 0],     [1, 3],     [1, 0]
+        ]).transpose())
 
         adj = l.extract_patches_adj(patched)
         self.assertEqual(adj.shape, (2, 9))
@@ -112,7 +111,7 @@ class LayerTest(unittest.TestCase):
             [1, 3],     [1, 0],     [1, 3], 
             [1, 0],     [1, 3],     [1, 0]
         ]).transpose()
-        #print(adj.transpose())
+
         self.assertTrue((adj == expectedAdj).all())
 
     def test_extract_patches_adj_with_zero_padding(self):
@@ -137,7 +136,6 @@ class LayerTest(unittest.TestCase):
             [4, 4],     [6, 0],     [4, 0]
         ]).transpose()
         
-        print(adj.transpose())
         self.assertTrue((adj == expectedAdj).all())
 
 

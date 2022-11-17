@@ -90,5 +90,56 @@ class LayerTest(unittest.TestCase):
 
         self.assertTrue((patched == expectedPatched).all())
 
+    def test_extract_patches_adj_without_zero_padding(self):
+        l = layer(
+            input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            zero_padding=(0, 0)
+        )
+        patched = np.array([
+            [
+                1, 0,   1, 3,   1, 0,
+                1, 3,   1, 0,   1, 3,
+                1, 0,   1, 3,   1, 0,
+            ]
+        ]).transpose()
+
+        adj = l.extract_patches_adj(patched)
+        self.assertEqual(adj.shape, (2, 9))
+
+        expectedAdj = np.array([
+            [1, 0],     [1, 3],     [1, 0], 
+            [1, 3],     [1, 0],     [1, 3], 
+            [1, 0],     [1, 3],     [1, 0]
+        ]).transpose()
+        #print(adj.transpose())
+        self.assertTrue((adj == expectedAdj).all())
+
+    def test_extract_patches_adj_with_zero_padding(self):
+        l = layer(
+            input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            zero_padding=(1, 1)
+        )
+
+        patched = l.extract_patches(np.array([
+            [1, 3],     [1, 2],     [1, 1], 
+            [1, 2],     [1, 1],     [1, 0], 
+            [1, 1],     [1, 0],     [1, 0]
+        ]).transpose())
+
+        adj = l.extract_patches_adj(patched)
+        self.assertEqual(adj.shape, (2, 9))
+
+        expectedAdj = np.array([
+            [4, 12],    [6, 12],    [4, 4], 
+            [6, 12],    [9, 9],     [6, 0], 
+            [4, 4],     [6, 0],     [4, 0]
+        ]).transpose()
+        
+        print(adj.transpose())
+        self.assertTrue((adj == expectedAdj).all())
+
+
 if __name__ == '__main__':
     unittest.main()

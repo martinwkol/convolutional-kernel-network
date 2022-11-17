@@ -71,10 +71,8 @@ class layer:
                         patch_mx_pixel = patch_mx_x + patch_mx_pixel_row
                         input_pixel = input_x + input_pixel_row
                         
-                        patch_mx_row = current_patch_mx_row
                         for channel in range(channels):
-                            patch_mx[patch_mx_row][patch_mx_pixel] = input[channel][input_pixel]
-                            patch_mx_row += 1
+                            patch_mx[current_patch_mx_row + channel][patch_mx_pixel] = input[channel][input_pixel]
 
                 current_patch_mx_row += channels
 

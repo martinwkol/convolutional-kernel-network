@@ -13,9 +13,9 @@ from src.layer import layer
 class LayerTest(unittest.TestCase):
     def test_extract_patches_without_zero_padding(self):
         l = layer(
-            input_size=(3, 3), num_channels=2, patch_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter=[],
-            use_zero_padding=False
+            input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            zero_padding=(0, 0)
         )
         input = np.array([
             [11, 12], [13, 14], [15, 16], 
@@ -24,7 +24,7 @@ class LayerTest(unittest.TestCase):
         ]).transpose()
         patched = l.extract_patches(input)
 
-        self.assertEqual(patched.shape, (2 * l.patch_size[0] * l.patch_size[1], 1))
+        self.assertEqual(patched.shape, (2 * l.filter_size[0] * l.filter_size[1], 1))
         expectedPatched = np.array([
             [
                 11, 12, 13, 14, 15, 16,
@@ -36,9 +36,9 @@ class LayerTest(unittest.TestCase):
 
     def test_extract_patches_zero_padding(self):
         l = layer(
-            input_size=(3, 3), num_channels=2, patch_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter=[],
-            use_zero_padding=True
+            input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            zero_padding=(1, 1)
         )
         input = np.array([
             [11, 12], [13, 14], [15, 16], 
@@ -47,7 +47,7 @@ class LayerTest(unittest.TestCase):
         ]).transpose()
         patched = l.extract_patches(input)
 
-        self.assertEqual(patched.shape, (2 * l.patch_size[0] * l.patch_size[1], l.input_size[0] * l.input_size[1]))
+        self.assertEqual(patched.shape, (2 * l.filter_size[0] * l.filter_size[1], l.input_size[0] * l.input_size[1]))
         expectedPatched = np.array([
             [
                 0, 0,   0, 0,   0, 0,

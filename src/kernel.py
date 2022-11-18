@@ -5,13 +5,11 @@ class dot_product_kernel:
         self._function = function
         self._derivative = derivative
 
-    @property
-    def function(self):
-        return self._function
+    def func(self, x):
+        return self._function(x)
 
-    @property
-    def derivative(self):
-        return self._derivative
+    def deriv(self, x):
+        return self._derivative(x)
 
 def get_rbf(alpha):
     return dot_product_kernel(

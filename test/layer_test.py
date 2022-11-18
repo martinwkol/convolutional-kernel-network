@@ -7,14 +7,20 @@ current_directory = os.path.dirname(os.path.realpath(__file__))
 parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
 
-from src.kernel import dot_product_kernel
+from src.kernel import get_rbf
 from src.layer import layer
 
 class LayerTest(unittest.TestCase):
+    def setUp(self):
+        self.filter_mx_3x3 = np.array([
+            [1,     0, 0,   0, 0,   0, 0,   0, 0], 
+            [0.25,  0, 0.25,0, 0.25,0, 0.25,0, 0]
+        ]).transpose()
+
     def test_extract_patches_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
             zero_padding=(0, 0)
         )
         input = np.array([
@@ -37,7 +43,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
             zero_padding=(1, 1)
         )
         input = np.array([
@@ -93,10 +99,10 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_adj_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
             zero_padding=(0, 0)
         )
-        
+
         patched = l.extract_patches(np.array([
             [1, 0],     [1, 3],     [1, 0], 
             [1, 3],     [1, 0],     [1, 3], 
@@ -117,7 +123,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_adj_with_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=dot_product_kernel, filter_matrix=[],
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
             zero_padding=(1, 1)
         )
 
@@ -138,6 +144,14 @@ class LayerTest(unittest.TestCase):
         
         self.assertTrue((adj == expectedAdj).all())
 
+    def test_forward_doesnt_crash(self):
+        l = layer(
+            input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=get_rbf(1), 
+            filter_matrix=self.filter_mx_3x3,
+            zero_padding=(0, 0)
+        )
+        l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
 
 if __name__ == '__main__':
     unittest.main()

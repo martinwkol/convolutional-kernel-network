@@ -153,5 +153,34 @@ class LayerTest(unittest.TestCase):
         )
         l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
 
+    def test_g_doesnt_crash(self):
+        l = layer(
+            input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=get_rbf(1), 
+            filter_matrix=self.filter_mx_3x3,
+            zero_padding=(1, 1)
+        )
+        l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
+        l.g(np.array([
+            [0.5, 0.5], [0.7, 0.9], [0.3, 0.7],
+            [0.2, 0.1], [0.1, 0.3], [0.6, 0.4],
+            [0.5, 0.9], [0.2, 0.1], [0.1, 0.8],
+        ]).transpose())
+
+    def test_h_doesnt_crash(self):
+        l = layer(
+            input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
+            pooling_factor=0.5, dp_kernel=get_rbf(1), 
+            filter_matrix=self.filter_mx_3x3,
+            zero_padding=(1, 1)
+        )
+        l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
+        l.h(np.array([
+            [0.5, 0.5], [0.7, 0.9], [0.3, 0.7],
+            [0.2, 0.1], [0.1, 0.3], [0.6, 0.4],
+            [0.5, 0.9], [0.2, 0.1], [0.1, 0.8],
+        ]).transpose())
+
+
 if __name__ == '__main__':
     unittest.main()

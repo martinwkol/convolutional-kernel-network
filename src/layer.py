@@ -71,29 +71,24 @@ class layer:
         self._A_3_2 = np.matmul(evectors * evalues_n3_4, evectors.transpose())
 
 
-    def extract_patches(self, input):
-        x_filter_radius = (self._filter_size[0] - 1) // 2
-        y_filter_radius = (self._filter_size[1] - 1) // 2
-        
+    def extract_patches(self, input):        
         input = np.reshape(input, (self._num_channels, self._input_size[0], self._input_size[1]))
 
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            input = np.pad(input, ((0, 0), (self._zero_padding[0], self._zero_padding[0]), (self._zero_padding[1], self._zero_padding[1])))
-
-        x_diff_range = range(x_filter_radius * 2 + 1)
-        y_diff_range = range(y_filter_radius * 2 + 1)
-        
+            input = np.pad(input, ( (0, 0), (self._zero_padding[0], self._zero_padding[0]), 
+                                    (self._zero_padding[1], self._zero_padding[1])))
+       
         patch_mx_size = (self._num_channels * self._filter_size[0] * self._filter_size[1], 
-                        input.shape[1] - x_filter_radius * 2, 
-                        input.shape[2] - y_filter_radius * 2)
+                        input.shape[1] - (self._filter_size[0] - 1), 
+                        input.shape[2] - (self._filter_size[1] - 1))
         patch_mx = np.empty(patch_mx_size)
 
         for patch_mx_x in range(patch_mx_size[1]):
             for patch_mx_y in range(patch_mx_size[2]):
                 channel_offset = 0
 
-                for x_diff in x_diff_range:
-                    for y_diff in y_diff_range:
+                for x_diff in range(self._filter_size[0]):
+                    for y_diff in range(self._filter_size[1]):
                         input_x = patch_mx_x + x_diff
                         input_y = patch_mx_y + y_diff
 
@@ -106,27 +101,21 @@ class layer:
         return patch_mx
 
 
-    def extract_patches_adj(self, mx):
-        x_filter_radius = (self._filter_size[0] - 1) // 2
-        y_filter_radius = (self._filter_size[1] - 1) // 2
-        
+    def extract_patches_adj(self, mx):        
         mx = np.reshape(mx, (self._num_channels * self._filter_size[0] * self._filter_size[1],
-                            self._input_size[0] + self._zero_padding[0] * 2 - x_filter_radius * 2,
-                            self._input_size[1] + self._zero_padding[1] * 2 - y_filter_radius * 2))
+                            self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
+                            self._input_size[1] + self._zero_padding[1] * 2 - (self._filter_size[1] - 1)))
 
         result_mx = np.zeros((self._num_channels, 
                             self._input_size[0] + self._zero_padding[0] * 2, 
                             self._input_size[1] + self._zero_padding[1] * 2))
 
-        x_diff_range = range(x_filter_radius * 2 + 1)
-        y_diff_range = range(y_filter_radius * 2 + 1)
-
         for patch_mx_x in range(mx.shape[1]):
             for patch_mx_y in range(mx.shape[2]):
                 channel_offset = 0
 
-                for x_diff in x_diff_range:
-                    for y_diff in y_diff_range:
+                for x_diff in range(self._filter_size[0]):
+                    for y_diff in range(self._filter_size[1]):
                         result_x = patch_mx_x + x_diff
                         result_y = patch_mx_y + y_diff
 

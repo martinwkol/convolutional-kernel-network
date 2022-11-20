@@ -13,6 +13,7 @@ class layer:
         self.update_filter_matrix(filter_matrix)
 
         self._last_input = None
+        self._last_output = None
         self._E_input = None
         self._S_diag = None
         self._S_n1_diag = None
@@ -22,6 +23,11 @@ class layer:
     @property
     def input_size(self):
         return self._input_size
+    
+    @property
+    def output_size(self):
+        return (self._input_size[0] + self._zero_padding[0] - (self.filter_size[0] - 1),
+                self._input_size[1] + self._zero_padding[1] - (self.filter_size[1] - 1))
 
     @property
     def num_channels(self):
@@ -46,6 +52,10 @@ class layer:
     @property
     def zero_padding(self):
         return self._zero_padding
+
+    @property
+    def last_output(self): 
+        return self._last_output
 
     def update_filter_matrix(self, filter_matrix):
         assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1]
@@ -216,7 +226,9 @@ class layer:
         # A * k(Z^T * E(input) * S^-1) * S = M
         self._before_pooling = np.matmul(self._A, kerneled) * self._S_diag
 
+        self._last_output = self._before_pooling
+
         # TODO: add pooling
-        return self._before_pooling
+        return self._last_output
 
     

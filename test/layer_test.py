@@ -12,15 +12,19 @@ from src.layer import layer
 
 class LayerTest(unittest.TestCase):
     def setUp(self):
-        self.filter_mx_3x3 = np.array([
+        self.filter_mx_3x3x1 = np.array([
             [1,     0, 0,   0, 0,   0, 0,   0, 0], 
             [0.25,  0, 0.25,0, 0.25,0, 0.25,0, 0]
+        ]).transpose()
+        self.filter_mx_3x3x2 = 1/2 * np.array([
+            [1,     0, 0,   0, 0,   0, 0,   0, 0, 1,     0, 0,   0, 0,   0, 0,   0, 0], 
+            [0.25,  0, 0.25,0, 0.25,0, 0.25,0, 0, 0.25,  0, 0.25,0, 0.25,0, 0.25,0, 0]
         ]).transpose()
 
     def test_extract_patches_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(0, 0)
         )
         input = np.array([
@@ -43,7 +47,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(1, 1)
         )
         input = np.array([
@@ -99,7 +103,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_adj_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(0, 0)
         )
 
@@ -123,7 +127,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_adj_with_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3,
+            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(1, 1)
         )
 
@@ -148,7 +152,7 @@ class LayerTest(unittest.TestCase):
         l = layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
             pooling_factor=0.5, dp_kernel=get_rbf(1), 
-            filter_matrix=self.filter_mx_3x3,
+            filter_matrix=self.filter_mx_3x3x1,
             zero_padding=(0, 0)
         )
         l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
@@ -157,7 +161,7 @@ class LayerTest(unittest.TestCase):
         l = layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
             pooling_factor=0.5, dp_kernel=get_rbf(1), 
-            filter_matrix=self.filter_mx_3x3,
+            filter_matrix=self.filter_mx_3x3x1,
             zero_padding=(1, 1)
         )
         l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
@@ -171,7 +175,7 @@ class LayerTest(unittest.TestCase):
         l = layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
             pooling_factor=0.5, dp_kernel=get_rbf(1), 
-            filter_matrix=self.filter_mx_3x3,
+            filter_matrix=self.filter_mx_3x3x1,
             zero_padding=(1, 1)
         )
         l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))

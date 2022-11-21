@@ -112,6 +112,29 @@ class layer:
         return patch_mx
 
 
+    def extract_patches_numpy(self, input):
+        input = np.reshape(input, (self._num_channels, self._input_size[0], self._input_size[1]))
+
+        if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
+            input = np.pad(input, ( (0, 0), (self._zero_padding[0], self._zero_padding[0]), 
+                                    (self._zero_padding[1], self._zero_padding[1])))
+       
+        patch_mx_size = (self._num_channels * self._filter_size[0] * self._filter_size[1], 
+                        input.shape[1] - (self._filter_size[0] - 1), 
+                        input.shape[2] - (self._filter_size[1] - 1))
+        patch_mx = np.empty(patch_mx_size)
+
+        channel_offset = 0
+        for x_diff in range(self._filter_size[0]):
+            for y_diff in range(self._filter_size[1]):
+                patch_mx[channel_offset : channel_offset + self._num_channels, :, :] = \
+                    input[:, x_diff : patch_mx_size[1] + x_diff, y_diff : patch_mx_size[2] + y_diff]
+                channel_offset += self._num_channels
+
+        patch_mx = np.reshape(patch_mx, (patch_mx_size[0], patch_mx_size[1] * patch_mx_size[2]))
+        return patch_mx
+
+
     def extract_patches_adj(self, mx):        
         mx = np.reshape(mx, (self._num_channels * self._filter_size[0] * self._filter_size[1],
                             self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
@@ -210,7 +233,7 @@ class layer:
         self._last_input = input
 
         # E(input)
-        self._E_input = self.extract_patches(input)
+        self._E_input = self.extract_patches_numpy(input)
 
         # S (diagonal elements)
         self._S_diag = np.linalg.norm(self._E_input, axis = 0)

@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+import datetime
 
 class layer:
     def __init__(self, input_size, num_channels, filter_size, filter_matrix, pooling_factor, dp_kernel, zero_padding = (0, 0)):
@@ -58,14 +59,14 @@ class layer:
         return self._last_output
 
     def update_filter_matrix(self, filter_matrix):
-        assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1]
+        assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._num_channels
 
         # Z
         self._filter_matrix = filter_matrix
         # Z^T * Z
         self._Z_T__Z = np.matmul(filter_matrix.transpose(), filter_matrix)
-        # k(Z^T * Z)
-        m = self._dp_kernel.func(self._Z_T__Z)
+        # k(Z^T * Z) + eI
+        m = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
         # TODO: catch error if this fails
         evalues, evectors = np.linalg.eigh(m)
@@ -213,6 +214,8 @@ class layer:
 
         # S (diagonal elements)
         self._S_diag = np.linalg.norm(self._E_input, axis = 0)
+        # no 0 values
+        self._S_diag += np.full(len(self._S_diag), 0.00001)
 
         # S^-1 (diagonal elements)
         self._S_n1_diag = 1 / self._S_diag

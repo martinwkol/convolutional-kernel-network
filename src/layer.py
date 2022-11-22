@@ -212,7 +212,7 @@ class layer:
         assert U.shape[1] == self._before_pooling_size[0] * self._before_pooling_size[1]
         U_3d = np.reshape(U, (U.shape[0], self._before_pooling_size[0], self._before_pooling_size[1]))
 
-        pooled_size = (U.shape[0], self._before_pooling_size[0] // self._pooling_size[0], self._before_pooling_size[1] // self._pooling_size[1])
+        pooled_size = (U.shape[0], self.output_size[0], self.output_size[1])
         pooled = np.zeros(pooled_size)
 
         for x in range(self._pooling_size[0]):
@@ -222,6 +222,25 @@ class layer:
 
         pooled /= self._pooling_size[0] * self._pooling_size[1]
         return pooled.reshape((pooled_size[0], pooled_size[1] * pooled_size[2]))
+
+
+    def avg_pooling_t(self, U):
+        assert U.shape[1] == self._output_size[0] * self._output_size[1]
+        U_3d = np.reshape(U, (U.shape[0], self._output_size[0], self._output_size[1]))
+
+        upscaled_size = (U.shape[0], self._before_pooling_size[0], self._before_pooling_size[1])
+        upscaled = np.empty(upscaled_size)
+
+        for x in range(self._pooling_size[0]):
+            for y in range(self._pooling_size[1]):
+                upscaled[:, x : x + self._output_size[0] * self._pooling_size[0] : self._pooling_size[0], 
+                            y : y + self._output_size[1] * self._pooling_size[1] : self._pooling_size[1]] = U_3d
+        
+        upscaled[:, self._output_size[0] * self._pooling_size[0]::, :] = 0
+        upscaled[:, :, self._output_size[1] * self._pooling_size[1]::] = 0
+
+        upscaled /= self._pooling_size[0] * self._pooling_size[1]
+        return upscaled.reshape((upscaled_size[0], upscaled_size[1] * upscaled_size[2]))
 
 
     def calculate_B(self, U):

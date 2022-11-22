@@ -149,6 +149,32 @@ class LayerTest(unittest.TestCase):
         self.assertTrue((pooled == expected_pooled).all())
 
 
+    def test_avg_pooling_t(self):
+        l = layer(
+            input_size=(5, 5), num_channels=1, filter_size=(1, 1), 
+            pooling_size=(2, 2), dp_kernel=get_rbf(1), 
+            filter_matrix=self.filter_mx_1x1x1,
+            zero_padding=(0, 0)
+        )
+
+        U = np.array([[
+            2., 4.,
+            4., 6.
+        ]])
+
+        upscaled = l.avg_pooling_t(U)
+
+        expected_upscaled = np.array([[
+            0.5, 0.5,   1., 1.,     0.,
+            0.5, 0.5,   1., 1.,     0.,
+            1., 1.,     1.5, 1.5,   0.,
+            1., 1.,     1.5, 1.5,   0.,
+            0., 0.,     0., 0.,     0.
+        ]])
+
+        self.assertTrue((upscaled == expected_upscaled).all())
+
+
 
 
     def test_forward_doesnt_crash(self):

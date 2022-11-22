@@ -14,8 +14,8 @@ class layer:
         self.update_filter_matrix(filter_matrix)
 
         self._before_pooling_size = \
-                (self._input_size[0] + self._zero_padding[0] - (self.filter_size[0] - 1),
-                self._input_size[1] + self._zero_padding[1] - (self.filter_size[1] - 1))
+                (self._input_size[0] + self._zero_padding[0] * 2 - (self.filter_size[0] - 1),
+                self._input_size[1] + self._zero_padding[1] * 2 - (self.filter_size[1] - 1))
         self._output_size = \
                 (self._before_pooling_size[0] // self._pooling_size[0],
                 self._before_pooling_size[1] // self._pooling_size[1])

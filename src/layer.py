@@ -26,7 +26,7 @@ class layer:
         return self._input_size
     
     @property
-    def output_size(self):
+    def before_padding_size(self):
         return (self._input_size[0] + self._zero_padding[0] - (self.filter_size[0] - 1),
                 self._input_size[1] + self._zero_padding[1] - (self.filter_size[1] - 1))
 
@@ -199,18 +199,20 @@ class layer:
 
 
     def avg_pooling(self, U):
-        assert U.shape[1] == self._input_size[0] * self._input_size[1]
-        U_3d = np.reshape(U, (U.shape[0], self._input_size[0], self._input_size[1]))
+        before_padding_x, before_padding_y = self.before_padding_size
+        assert U.shape[1] == before_padding_x * before_padding_y
+        U_3d = np.reshape(U, (U.shape[0], before_padding_x, before_padding_y))
 
-        pooled_size = (U.shape[0], self._input_size[0] // self._pooling_size[0], self._input_size[1] // self._pooling_size[1])
+        pooled_size = (U.shape[0], before_padding_x // self._pooling_size[0], before_padding_y // self._pooling_size[1])
         pooled = np.zeros(pooled_size)
 
         for x in range(self._pooling_size[0]):
             for y in range(self._pooling_size[1]):
-                pooled += U_3d[:, x::self._pooling_size[0], y::self._pooling_size[1]]
+                pooled += U_3d[:,   x : x + pooled_size[1] * self._pooling_size[0] : self._pooling_size[0], 
+                                    y : y + pooled_size[2] * self._pooling_size[1] : self._pooling_size[1]]
 
         pooled /= self._pooling_size[0] * self._pooling_size[1]
-        return pooled
+        return pooled.reshape((pooled_size[0], pooled_size[1] * pooled_size[2]))
 
 
     def calculate_B(self, U):

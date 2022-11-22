@@ -24,7 +24,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_numpy_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(0, 0)
         )
         input = np.array([
@@ -47,7 +47,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_numpy_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(1, 1)
         )
         input = np.array([
@@ -103,7 +103,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_adj_numpy_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(0, 0)
         )
 
@@ -127,7 +127,7 @@ class LayerTest(unittest.TestCase):
     def test_extract_patches_adj_numpy_with_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(1, 1)
         )
 
@@ -151,7 +151,7 @@ class LayerTest(unittest.TestCase):
     def test_forward_doesnt_crash(self):
         l = layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), 
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), 
             filter_matrix=self.filter_mx_3x3x1,
             zero_padding=(0, 0)
         )
@@ -160,7 +160,7 @@ class LayerTest(unittest.TestCase):
     def test_g_doesnt_crash(self):
         l = layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), 
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), 
             filter_matrix=self.filter_mx_3x3x1,
             zero_padding=(1, 1)
         )
@@ -174,7 +174,7 @@ class LayerTest(unittest.TestCase):
     def test_h_doesnt_crash(self):
         l = layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
-            pooling_factor=0.5, dp_kernel=get_rbf(1), 
+            pooling_size=(1, 1), dp_kernel=get_rbf(1), 
             filter_matrix=self.filter_mx_3x3x1,
             zero_padding=(1, 1)
         )

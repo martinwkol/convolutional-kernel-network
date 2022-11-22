@@ -3,11 +3,11 @@ import scipy
 import datetime
 
 class layer:
-    def __init__(self, input_size, num_channels, filter_size, filter_matrix, pooling_factor, dp_kernel, zero_padding = (0, 0)):
+    def __init__(self, input_size, num_channels, filter_size, filter_matrix, pooling_size, dp_kernel, zero_padding = (0, 0)):
         self._input_size = input_size
         self._num_channels = num_channels
         self._filter_size = filter_size
-        self._pooling_factor = pooling_factor
+        self._pooling_size = pooling_size
         self._dp_kernel = dp_kernel
         self._zero_padding = zero_padding
 
@@ -196,7 +196,22 @@ class layer:
 
         result_mx = np.reshape(result_mx, (self._num_channels, self._input_size[0] * self._input_size[1]))
         return result_mx
-    
+
+
+    def avg_pooling(self, U):
+        assert U.shape[1] == self._input_size[0] * self._input_size[1]
+        U_3d = np.reshape(U, (U.shape[0], self._input_size[0], self._input_size[1]))
+
+        pooled_size = (U.shape[0], self._input_size[0] // self._pooling_size[0], self._input_size[1] // self._pooling_size[1])
+        pooled = np.zeros(pooled_size)
+
+        for x in range(self._pooling_size[0]):
+            for y in range(self._pooling_size[1]):
+                pooled += U_3d[:, x::self._pooling_size[0], y::self._pooling_size[1]]
+
+        pooled /= self._pooling_size[0] * self._pooling_size[1]
+        return pooled
+
 
     def calculate_B(self, U):
         # B = k'(Z^T E(input) S^-1) * (A U P^T)

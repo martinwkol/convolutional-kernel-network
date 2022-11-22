@@ -13,6 +13,13 @@ class layer:
 
         self.update_filter_matrix(filter_matrix)
 
+        self._before_pooling_size = \
+                (self._input_size[0] + self._zero_padding[0] - (self.filter_size[0] - 1),
+                self._input_size[1] + self._zero_padding[1] - (self.filter_size[1] - 1))
+        self._output_size = \
+                (self._before_pooling_size[0] // self._pooling_size[0],
+                self._before_pooling_size[1] // self._pooling_size[1])
+
         self._last_input = None
         self._last_output = None
         self._E_input = None
@@ -26,9 +33,12 @@ class layer:
         return self._input_size
     
     @property
-    def before_padding_size(self):
-        return (self._input_size[0] + self._zero_padding[0] - (self.filter_size[0] - 1),
-                self._input_size[1] + self._zero_padding[1] - (self.filter_size[1] - 1))
+    def before_pooling_size(self):
+        return self._before_pooling_size
+
+    @property
+    def output_size(self):
+        return self._output_size
 
     @property
     def num_channels(self):
@@ -199,11 +209,10 @@ class layer:
 
 
     def avg_pooling(self, U):
-        before_padding_x, before_padding_y = self.before_padding_size
-        assert U.shape[1] == before_padding_x * before_padding_y
-        U_3d = np.reshape(U, (U.shape[0], before_padding_x, before_padding_y))
+        assert U.shape[1] == self._before_pooling_size[0] * self._before_pooling_size[1]
+        U_3d = np.reshape(U, (U.shape[0], self._before_pooling_size[0], self._before_pooling_size[1]))
 
-        pooled_size = (U.shape[0], before_padding_x // self._pooling_size[0], before_padding_y // self._pooling_size[1])
+        pooled_size = (U.shape[0], self._before_pooling_size[0] // self._pooling_size[0], self._before_pooling_size[1] // self._pooling_size[1])
         pooled = np.zeros(pooled_size)
 
         for x in range(self._pooling_size[0]):

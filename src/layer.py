@@ -170,6 +170,34 @@ class layer:
         return result_mx
     
 
+    def extract_patches_adj_numpy(self, mx):        
+        mx = np.reshape(mx, (self._num_channels * self._filter_size[0] * self._filter_size[1],
+                            self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
+                            self._input_size[1] + self._zero_padding[1] * 2 - (self._filter_size[1] - 1)))
+
+        result_mx = np.zeros((self._num_channels, 
+                            self._input_size[0] + self._zero_padding[0] * 2, 
+                            self._input_size[1] + self._zero_padding[1] * 2))
+
+        channel_offset = 0
+        for x_diff in range(self._filter_size[0]):
+            for y_diff in range(self._filter_size[1]):
+                result_mx[:, x_diff : mx.shape[1] + x_diff, y_diff : mx.shape[2] + y_diff] += \
+                    mx[channel_offset : channel_offset + self._num_channels][:][:]
+                
+                channel_offset += self._num_channels
+
+        if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
+            without_padding = np.empty((self._num_channels, self._input_size[0], self._input_size[1]))
+            without_padding[:, :, :] =  \
+                result_mx[:, self._zero_padding[0] : self._input_size[0] + self._zero_padding[0], 
+                            self._zero_padding[1] : self._input_size[1] + self._zero_padding[1]]
+            result_mx = without_padding
+
+        result_mx = np.reshape(result_mx, (self._num_channels, self._input_size[0] * self._input_size[1]))
+        return result_mx
+    
+
     def calculate_B(self, U):
         # B = k'(Z^T E(input) S^-1) * (A U P^T)
         # TODO: add pooling
@@ -223,7 +251,7 @@ class layer:
         X_diag = self._S_n1_diag * self._S_n1_diag * (M_T__U__P_T__diag - E_input_T__Z__B__diag)
         
         # h(U) = E_adj( Z B + E(input) X )
-        h_U = self.extract_patches_adj(Z_B + self._E_input * X_diag)
+        h_U = self.extract_patches_adj_numpy(Z_B + self._E_input * X_diag)
 
         return h_U
 

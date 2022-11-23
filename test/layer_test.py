@@ -22,7 +22,7 @@ class LayerTest(unittest.TestCase):
         self.filter_mx_3x3x1 = LayerTest.random_filter_matrix((3*3*1, 2))
         self.filter_mx_3x3x2 = LayerTest.random_filter_matrix((3*3*2, 2))
 
-    def test_extract_patches_numpy_without_zero_padding(self):
+    def test_extract_patches_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
@@ -33,7 +33,7 @@ class LayerTest(unittest.TestCase):
             [21, 22], [23, 24], [25, 26], 
             [31, 32], [33, 34], [35, 36]
         ]).transpose()
-        patched = l.extract_patches_numpy(input)
+        patched = l.extract_patches(input)
 
         self.assertEqual(patched.shape, (2 * l.filter_size[0] * l.filter_size[1], 1))
         expectedPatched = np.array([
@@ -45,7 +45,7 @@ class LayerTest(unittest.TestCase):
         ]).transpose()
         self.assertTrue((patched == expectedPatched).all())
 
-    def test_extract_patches_numpy_zero_padding(self):
+    def test_extract_patches_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
@@ -56,7 +56,7 @@ class LayerTest(unittest.TestCase):
             [21, 22], [23, 24], [25, 26], 
             [31, 32], [33, 34], [35, 36]
         ]).transpose()
-        patched = l.extract_patches_numpy(input)
+        patched = l.extract_patches(input)
 
         self.assertEqual(patched.shape, (2 * l.filter_size[0] * l.filter_size[1], l.input_size[0] * l.input_size[1]))
         expectedPatched = np.array([
@@ -73,7 +73,7 @@ class LayerTest(unittest.TestCase):
 
         self.assertTrue((patched == expectedPatched).all())
 
-    def test_extract_patches_adj_numpy_without_zero_padding(self):
+    def test_extract_patches_adj_without_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
@@ -86,7 +86,7 @@ class LayerTest(unittest.TestCase):
             [1, 0],     [1, 3],     [1, 0]
         ]).transpose())
 
-        adj = l.extract_patches_adj_numpy(patched)
+        adj = l.extract_patches_adj(patched)
         self.assertEqual(adj.shape, (2, 9))
 
         expectedAdj = np.array([
@@ -97,7 +97,7 @@ class LayerTest(unittest.TestCase):
 
         self.assertTrue((adj == expectedAdj).all())
 
-    def test_extract_patches_adj_numpy_with_zero_padding(self):
+    def test_extract_patches_adj_with_zero_padding(self):
         l = layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             pooling_size=(1, 1), dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
@@ -110,7 +110,7 @@ class LayerTest(unittest.TestCase):
             [1, 1],     [1, 0],     [1, 0]
         ]).transpose())
 
-        adj = l.extract_patches_adj_numpy(patched)
+        adj = l.extract_patches_adj(patched)
         self.assertEqual(adj.shape, (2, 9))
 
         expectedAdj = np.array([

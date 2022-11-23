@@ -1,4 +1,6 @@
 import numpy as np
+from layer import filter_layer
+from pooling_layer import pooling_layer
 
 class network:
     def __init__(self, layers, output_weights):
@@ -20,12 +22,22 @@ class network:
 
         layer_gradients = [None] * len(self._layers)
         # TODO: find an even better variable name
-        good_variable_name = np.einsum('k,kij->ij', loss_func_gradient, self._output_weights)
+        grad_after_pooling = np.einsum('k,kij->ij', loss_func_gradient, self._output_weights)
+        grad_upscaled = grad_after_pooling
+        output_after_pooling = self._layers[len(self._layers) - 1].last_output
+        
         for i in reversed(range(len(self._layers))):
-            B = self._layers[i].calculate_B(good_variable_name)
-            C = self._layers[i].calculate_C(good_variable_name)
-            layer_gradients[i] = self._layers[i].g(good_variable_name, B, C)
-            if i > 0:
-                good_variable_name = self._layers[i].h(good_variable_name, B)
+            if isinstance(self._layers[i], filter_layer):
+                B = self._layers[i].calculate_B(grad_upscaled)
+                C = self._layers[i].calculate_C(grad_after_pooling, output_after_pooling)
+                layer_gradients[i] = self._layers[i].g(B, C)
+
+                if i > 0:
+                    grad_after_pooling = self._layers[i].h(grad_upscaled, B)
+                    grad_upscaled = grad_after_pooling
+                    output_after_pooling = self._layers[i - 1].last_output
+            
+            elif isinstance(self._layers[i], pooling_layer):
+                grad_upscaled = self._layers[i].backward(grad_upscaled)
         
         return layer_gradients, output_weights_grad

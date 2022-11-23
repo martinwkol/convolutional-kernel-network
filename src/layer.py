@@ -1,24 +1,18 @@
 import numpy as np
-import scipy
-import datetime
 
-class layer:
-    def __init__(self, input_size, num_channels, filter_size, filter_matrix, pooling_size, dp_kernel, zero_padding = (0, 0)):
+class filter_layer:
+    def __init__(self, input_size, num_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
         self._input_size = input_size
         self._num_channels = num_channels
         self._filter_size = filter_size
-        self._pooling_size = pooling_size
         self._dp_kernel = dp_kernel
         self._zero_padding = zero_padding
 
         self.update_filter_matrix(filter_matrix)
 
-        self._before_pooling_size = \
+        self._output_size = \
                 (self._input_size[0] + self._zero_padding[0] * 2 - (self.filter_size[0] - 1),
                 self._input_size[1] + self._zero_padding[1] * 2 - (self.filter_size[1] - 1))
-        self._output_size = \
-                (self._before_pooling_size[0] // self._pooling_size[0],
-                self._before_pooling_size[1] // self._pooling_size[1])
 
         self._last_input = None
         self._last_output = None
@@ -26,15 +20,10 @@ class layer:
         self._S_diag = None
         self._S_n1_diag = None
         self._Z_T__E_input__S_n1 = None
-        self._before_pooling = None
 
     @property
     def input_size(self):
         return self._input_size
-    
-    @property
-    def before_pooling_size(self):
-        return self._before_pooling_size
 
     @property
     def output_size(self):
@@ -51,10 +40,6 @@ class layer:
     @property
     def filter_matrix(self):
         return self._filter_matrix
-
-    @property
-    def pooling_factor(self):
-        return self._pooling_factor
 
     @property
     def dp_kernel(self):
@@ -144,59 +129,19 @@ class layer:
         return result_mx
 
 
-    def avg_pooling(self, U):
-        assert U.shape[1] == self._before_pooling_size[0] * self._before_pooling_size[1]
-        U_3d = np.reshape(U, (U.shape[0], self._before_pooling_size[0], self._before_pooling_size[1]))
-
-        pooled_size = (U.shape[0], self.output_size[0], self.output_size[1])
-        pooled = np.zeros(pooled_size)
-
-        for x in range(self._pooling_size[0]):
-            for y in range(self._pooling_size[1]):
-                pooled += U_3d[:,   x : x + pooled_size[1] * self._pooling_size[0] : self._pooling_size[0], 
-                                    y : y + pooled_size[2] * self._pooling_size[1] : self._pooling_size[1]]
-
-        pooled /= self._pooling_size[0] * self._pooling_size[1]
-        return pooled.reshape((pooled_size[0], pooled_size[1] * pooled_size[2]))
-
-
-    def avg_pooling_t(self, U):
-        assert U.shape[1] == self._output_size[0] * self._output_size[1]
-        U_3d = np.reshape(U, (U.shape[0], self._output_size[0], self._output_size[1]))
-
-        upscaled_size = (U.shape[0], self._before_pooling_size[0], self._before_pooling_size[1])
-        upscaled = np.empty(upscaled_size)
-
-        for x in range(self._pooling_size[0]):
-            for y in range(self._pooling_size[1]):
-                upscaled[:, x : x + self._output_size[0] * self._pooling_size[0] : self._pooling_size[0], 
-                            y : y + self._output_size[1] * self._pooling_size[1] : self._pooling_size[1]] = U_3d
-        
-        upscaled[:, self._output_size[0] * self._pooling_size[0]::, :] = 0
-        upscaled[:, :, self._output_size[1] * self._pooling_size[1]::] = 0
-
-        upscaled /= self._pooling_size[0] * self._pooling_size[1]
-        return upscaled.reshape((upscaled_size[0], upscaled_size[1] * upscaled_size[2]))
-
-
-    def calculate_B(self, U):
+    def calculate_B(self, U_upscaled):
         # B = k'(Z^T E(input) S^-1) * (A U P^T)
         # TODO: add pooling
-        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * np.matmul(self._A, self.avg_pooling_t(U))
+        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * np.matmul(self._A, U_upscaled)
 
 
-    def calculate_C(self, U):
+    def calculate_C(self, U, output_after_pooling):
         # C = A^1/2 output U^T A^3/2
-        return np.matmul( np.matmul(self._A_1_2, self._last_output), np.matmul(U.transpose(), self._A_3_2) )
+        return np.matmul( np.matmul(self._A_1_2, output_after_pooling), np.matmul(U.transpose(), self._A_3_2) )
 
 
-    def g(self, U, B = None, C = None):
+    def g(self, B, C):
         # g(U) = E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
-
-        if B is None:
-            B = self.calculate_B(U)
-        if C is None:
-            C = self.calculate_C(U)
 
         # E(input) B^T
         E_input__B_T = np.matmul(self._E_input, B.transpose())
@@ -210,18 +155,16 @@ class layer:
         return g_U
 
 
-    def h(self, U, B = None):
+    def h(self, U_upscaled, B):
+        # U_upscaled = U P^T
         # X = S^-2 * (M^T U P^T - E(input)^T Z B))    (X is a diagonal matrix)
         # h(U) = E_adj( Z B + E(input) X )
-
-        if B is None:
-            B = self.calculate_B(U)
 
         # Z B
         Z_B = np.matmul(self.filter_matrix, B)
 
         # M^T U P^T         (diagonal elements)
-        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._before_pooling.transpose(), self.avg_pooling_t(U))
+        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._last_output.transpose(), U_upscaled)
 
         # E(input)^T Z B    (diagonal elements)
         E_input_T__Z__B__diag = np.einsum('ij,ji->i', self._E_input.transpose(), Z_B)
@@ -257,10 +200,10 @@ class layer:
         kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
 
         # A k(Z^T E(input) S^-1) S = M
-        self._before_pooling = np.matmul(self._A, kerneled) * self._S_diag
+        self._last_output = np.matmul(self._A, kerneled) * self._S_diag
 
         # A k(Z^T E(input) S^-1) S P
-        self._last_output = self.avg_pooling(self._before_pooling)
+        #self._last_output = self.avg_pooling(self._before_pooling)
 
         return self._last_output
 

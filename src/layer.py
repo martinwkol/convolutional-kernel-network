@@ -246,13 +246,12 @@ class layer:
     def calculate_B(self, U):
         # B = k'(Z^T E(input) S^-1) * (A U P^T)
         # TODO: add pooling
-        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * np.matmul(self._A, U)
+        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * np.matmul(self._A, self.avg_pooling_t(U))
 
 
     def calculate_C(self, U):
         # C = A^1/2 output U^T A^3/2
-        # TODO: change self._before_pooling to output
-        return np.matmul( np.matmul(self._A_1_2, self._before_pooling), np.matmul(U.transpose(), self._A_3_2) )
+        return np.matmul( np.matmul(self._A_1_2, self._last_output), np.matmul(U.transpose(), self._A_3_2) )
 
 
     def g(self, U, B = None, C = None):
@@ -286,8 +285,7 @@ class layer:
         Z_B = np.matmul(self.filter_matrix, B)
 
         # M^T U P^T         (diagonal elements)
-        # TODO: add pooling
-        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._before_pooling.transpose(), U)
+        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._before_pooling.transpose(), self.avg_pooling_t(U))
 
         # E(input)^T Z B    (diagonal elements)
         E_input_T__Z__B__diag = np.einsum('ij,ji->i', self._E_input.transpose(), Z_B)
@@ -319,15 +317,15 @@ class layer:
         # Z^T E(input) S^-1
         self._Z_T__E_input__S_n1 = np.matmul(self._filter_matrix.transpose(), self._E_input * self._S_n1_diag)
 
-        # k(Z^T * E(input) * S^-1)
+        # k(Z^T E(input) S^-1)
         kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
 
-        # A * k(Z^T * E(input) * S^-1) * S = M
+        # A k(Z^T E(input) S^-1) S = M
         self._before_pooling = np.matmul(self._A, kerneled) * self._S_diag
 
-        self._last_output = self._before_pooling
+        # A k(Z^T E(input) S^-1) S P
+        self._last_output = self.avg_pooling(self._before_pooling)
 
-        # TODO: add pooling
         return self._last_output
 
     

@@ -6,9 +6,28 @@ class pooling_layer:
         self._pooling_size = pooling_size
         self._output_size = (input_size[0] // pooling_size[0], input_size[1] // pooling_size[1])
 
-    
+        self._last_output = None
+
+    @property
+    def input_size(self):
+        return self._input_size
+
+    @property
+    def pooling_size(self):
+        return self._pooling_size
+
+    @property
+    def output_size(self):
+        return self._output_size
+
+    @property
+    def last_output(self):
+        return self._last_output
+
+
     def forward(self, U):
-        return self._avg_pooling(U)
+        self._last_output = self._avg_pooling(U)
+        return self._last_output
 
     def backward(self, U):
         return self._avg_pooling_t(U)

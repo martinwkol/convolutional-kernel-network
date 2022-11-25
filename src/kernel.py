@@ -1,6 +1,6 @@
 import numpy as np
 
-class dot_product_kernel:
+class DotProductKernel:
     def __init__(self, function, derivative):
         self._function = function
         self._derivative = derivative
@@ -12,7 +12,7 @@ class dot_product_kernel:
         return self._derivative(x)
 
 def get_rbf(alpha):
-    return dot_product_kernel(
+    return DotProductKernel(
         lambda x: np.exp((x - 1) * alpha), 
         lambda x: alpha * np.exp((x - 1) * alpha)
     )

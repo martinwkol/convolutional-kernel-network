@@ -1,6 +1,6 @@
 import numpy as np
 
-class filter_layer:
+class int_filter_layer:
     def __init__(self, input_size, num_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
         self._input_size = input_size
         self._num_channels = num_channels

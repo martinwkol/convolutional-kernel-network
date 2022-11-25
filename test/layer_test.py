@@ -8,7 +8,7 @@ parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
 
 from src.kernel import get_rbf
-from src.layer import filter_layer
+from src.internal_filter_layer import int_filter_layer
 
 class LayerTest(unittest.TestCase):
     @staticmethod
@@ -23,7 +23,7 @@ class LayerTest(unittest.TestCase):
         self.filter_mx_3x3x2 = LayerTest.random_filter_matrix((3*3*2, 2))
 
     def test_extract_patches_without_zero_padding(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(0, 0)
@@ -46,7 +46,7 @@ class LayerTest(unittest.TestCase):
         self.assertTrue((patched == expectedPatched).all())
 
     def test_extract_patches_zero_padding(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(1, 1)
@@ -74,7 +74,7 @@ class LayerTest(unittest.TestCase):
         self.assertTrue((patched == expectedPatched).all())
 
     def test_extract_patches_adj_without_zero_padding(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(0, 0)
@@ -98,7 +98,7 @@ class LayerTest(unittest.TestCase):
         self.assertTrue((adj == expectedAdj).all())
 
     def test_extract_patches_adj_with_zero_padding(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=2, filter_size=(3, 3), 
             dp_kernel=get_rbf(1), filter_matrix=self.filter_mx_3x3x2,
             zero_padding=(1, 1)
@@ -124,7 +124,7 @@ class LayerTest(unittest.TestCase):
 
 
     def test_forward_doesnt_crash(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
              dp_kernel=get_rbf(1), 
             filter_matrix=self.filter_mx_3x3x1,
@@ -133,7 +133,7 @@ class LayerTest(unittest.TestCase):
         l.forward(np.array([[1, 1, 1, 1, 0, 1, 1, 1, 1]]))
 
     def test_g_doesnt_crash(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
             dp_kernel=get_rbf(1), 
             filter_matrix=self.filter_mx_3x3x1,
@@ -150,7 +150,7 @@ class LayerTest(unittest.TestCase):
         l.g(B, C)
 
     def test_h_doesnt_crash(self):
-        l = filter_layer(
+        l = int_filter_layer(
             input_size=(3, 3), num_channels=1, filter_size=(3, 3), 
             dp_kernel=get_rbf(1), 
             filter_matrix=self.filter_mx_3x3x1,

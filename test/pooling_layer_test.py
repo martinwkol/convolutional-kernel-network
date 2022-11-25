@@ -7,7 +7,7 @@ current_directory = os.path.dirname(os.path.realpath(__file__))
 parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
 
-from src.pooling_layer import pooling_layer
+from src.internal_pooling_layer import int_pooling_layer
 
 class LayerTest(unittest.TestCase):
     @staticmethod
@@ -23,7 +23,7 @@ class LayerTest(unittest.TestCase):
 
 
     def test_avg_pooling(self):
-        pl = pooling_layer(
+        pl = int_pooling_layer(
             input_size=(5, 5), pooling_size=(2, 2),
         )
 
@@ -46,7 +46,7 @@ class LayerTest(unittest.TestCase):
 
 
     def test_avg_pooling_t(self):
-        pl = pooling_layer(
+        pl = int_pooling_layer(
             input_size=(5, 5), pooling_size=(2, 2),
         )
 

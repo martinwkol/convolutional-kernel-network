@@ -1,6 +1,6 @@
 import numpy as np
-from layer import filter_layer
-from pooling_layer import pooling_layer
+from internal_filter_layer import int_filter_layer
+from internal_pooling_layer import int_pooling_layer
 
 class network:
     def __init__(self, layers, output_weights):
@@ -27,7 +27,7 @@ class network:
         output_after_pooling = self._layers[len(self._layers) - 1].last_output
         
         for i in reversed(range(len(self._layers))):
-            if isinstance(self._layers[i], filter_layer):
+            if isinstance(self._layers[i], int_filter_layer):
                 B = self._layers[i].calculate_B(grad_upscaled)
                 C = self._layers[i].calculate_C(grad_after_pooling, output_after_pooling)
                 layer_gradients[i] = self._layers[i].g(B, C)
@@ -37,7 +37,7 @@ class network:
                     grad_upscaled = grad_after_pooling
                     output_after_pooling = self._layers[i - 1].last_output
             
-            elif isinstance(self._layers[i], pooling_layer):
+            elif isinstance(self._layers[i], int_pooling_layer):
                 grad_upscaled = self._layers[i].backward(grad_upscaled)
         
         return layer_gradients, output_weights_grad

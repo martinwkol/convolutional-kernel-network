@@ -1,6 +1,6 @@
 import numpy as np
 
-class pooling_layer:
+class int_pooling_layer:
     def __init__(self, input_size, pooling_size):
         self._input_size = input_size
         self._pooling_size = pooling_size

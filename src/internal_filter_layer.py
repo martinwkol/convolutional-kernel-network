@@ -1,9 +1,9 @@
 import numpy as np
 
 class IntFilterLayer:
-    def __init__(self, input_size, num_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
+    def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
         self._input_size = input_size
-        self._num_channels = num_channels
+        self._in_channels = in_channels
         self._filter_size = filter_size
         self._dp_kernel = dp_kernel
         self._zero_padding = zero_padding
@@ -30,8 +30,12 @@ class IntFilterLayer:
         return self._output_size
 
     @property
-    def num_channels(self):
-        return self._num_channels
+    def in_channels(self):
+        return self._in_channels
+
+    @property
+    def out_channels(self):
+        return self._filter_matrix.shape[1]
 
     @property
     def filter_size(self):
@@ -55,7 +59,7 @@ class IntFilterLayer:
 
 
     def update_filter_matrix(self, filter_matrix):
-        assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._num_channels
+        assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._in_channels
 
         # Z
         self._filter_matrix = filter_matrix
@@ -79,13 +83,13 @@ class IntFilterLayer:
 
 
     def extract_patches(self, input):
-        input = np.reshape(input, (self._num_channels, self._input_size[0], self._input_size[1]))
+        input = np.reshape(input, (self._in_channels, self._input_size[0], self._input_size[1]))
 
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
             input = np.pad(input, ( (0, 0), (self._zero_padding[0], self._zero_padding[0]), 
                                     (self._zero_padding[1], self._zero_padding[1])))
        
-        patch_mx_size = (self._num_channels * self._filter_size[0] * self._filter_size[1], 
+        patch_mx_size = (self._in_channels * self._filter_size[0] * self._filter_size[1], 
                         input.shape[1] - (self._filter_size[0] - 1), 
                         input.shape[2] - (self._filter_size[1] - 1))
         patch_mx = np.empty(patch_mx_size)
@@ -93,20 +97,20 @@ class IntFilterLayer:
         channel_offset = 0
         for x_diff in range(self._filter_size[0]):
             for y_diff in range(self._filter_size[1]):
-                patch_mx[channel_offset : channel_offset + self._num_channels, :, :] = \
+                patch_mx[channel_offset : channel_offset + self._in_channels, :, :] = \
                     input[:, x_diff : patch_mx_size[1] + x_diff, y_diff : patch_mx_size[2] + y_diff]
-                channel_offset += self._num_channels
+                channel_offset += self._in_channels
 
         patch_mx = np.reshape(patch_mx, (patch_mx_size[0], patch_mx_size[1] * patch_mx_size[2]))
         return patch_mx
     
 
     def extract_patches_adj(self, mx):        
-        mx = np.reshape(mx, (self._num_channels * self._filter_size[0] * self._filter_size[1],
+        mx = np.reshape(mx, (self._in_channels * self._filter_size[0] * self._filter_size[1],
                             self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
                             self._input_size[1] + self._zero_padding[1] * 2 - (self._filter_size[1] - 1)))
 
-        result_mx = np.zeros((self._num_channels, 
+        result_mx = np.zeros((self._in_channels, 
                             self._input_size[0] + self._zero_padding[0] * 2, 
                             self._input_size[1] + self._zero_padding[1] * 2))
 
@@ -114,18 +118,18 @@ class IntFilterLayer:
         for x_diff in range(self._filter_size[0]):
             for y_diff in range(self._filter_size[1]):
                 result_mx[:, x_diff : mx.shape[1] + x_diff, y_diff : mx.shape[2] + y_diff] += \
-                    mx[channel_offset : channel_offset + self._num_channels][:][:]
+                    mx[channel_offset : channel_offset + self._in_channels][:][:]
                 
-                channel_offset += self._num_channels
+                channel_offset += self._in_channels
 
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            without_padding = np.empty((self._num_channels, self._input_size[0], self._input_size[1]))
+            without_padding = np.empty((self._in_channels, self._input_size[0], self._input_size[1]))
             without_padding =  \
                 result_mx[:, self._zero_padding[0] : self._input_size[0] + self._zero_padding[0], 
                             self._zero_padding[1] : self._input_size[1] + self._zero_padding[1]]
             result_mx = without_padding
 
-        result_mx = np.reshape(result_mx, (self._num_channels, self._input_size[0] * self._input_size[1]))
+        result_mx = np.reshape(result_mx, (self._in_channels, self._input_size[0] * self._input_size[1]))
         return result_mx
 
 

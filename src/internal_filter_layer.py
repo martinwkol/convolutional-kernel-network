@@ -64,7 +64,7 @@ class IntFilterLayer:
         # Z
         self._filter_matrix = filter_matrix
         # Z^T * Z
-        self._Z_T__Z = np.matmul(filter_matrix.transpose(), filter_matrix)
+        self._Z_T__Z = filter_matrix.transpose() @ filter_matrix
         # k(Z^T * Z) + eI
         m = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
@@ -75,11 +75,11 @@ class IntFilterLayer:
         evalues_n3_4 = evalues_n1_2 * evalues_n1_4
         
         # A = k(Z^T * Z) ^ -1/2
-        self._A = np.matmul(evectors * evalues_n1_2, evectors.transpose())
+        self._A = (evectors * evalues_n1_2) @ evectors.transpose()
         # A^1/2
-        self._A_1_2 = np.matmul(evectors * evalues_n1_4, evectors.transpose())
+        self._A_1_2 = (evectors * evalues_n1_4) @ evectors.transpose()
         # A^3/2
-        self._A_3_2 = np.matmul(evectors * evalues_n3_4, evectors.transpose())
+        self._A_3_2 = (evectors * evalues_n3_4) @ evectors.transpose()
 
 
     def extract_patches(self, input):
@@ -136,25 +136,25 @@ class IntFilterLayer:
     def calculate_B(self, U_upscaled):
         # B = k'(Z^T E(input) S^-1) * (A U P^T)
         # TODO: add pooling
-        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * np.matmul(self._A, U_upscaled)
+        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
 
 
     def calculate_C(self, U, output_after_pooling):
         # C = A^1/2 output U^T A^3/2
-        return np.matmul( np.matmul(self._A_1_2, output_after_pooling), np.matmul(U.transpose(), self._A_3_2) )
+        return (self._A_1_2 @ output_after_pooling) @ (U.transpose() @ self._A_3_2)
 
 
     def g(self, B, C):
         # g(U) = E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
 
         # E(input) B^T
-        E_input__B_T = np.matmul(self._E_input, B.transpose())
+        E_input__B_T = self._E_input @ B.transpose()
 
         # k'(Z^T Z) * (C + C^T)
         k_d_Z_T__Z__mul__C_plus_C_T = self._dp_kernel.deriv(self._Z_T__Z) * (C + C.transpose())
 
         # E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
-        g_U = E_input__B_T - 1/2 * np.matmul(self.filter_matrix, k_d_Z_T__Z__mul__C_plus_C_T)
+        g_U = E_input__B_T - (1/2 * self.filter_matrix) @ k_d_Z_T__Z__mul__C_plus_C_T
 
         return g_U
 
@@ -165,7 +165,7 @@ class IntFilterLayer:
         # h(U) = E_adj( Z B + E(input) X )
 
         # Z B
-        Z_B = np.matmul(self.filter_matrix, B)
+        Z_B = self.filter_matrix @ B
 
         # M^T U P^T         (diagonal elements)
         M_T__U__P_T__diag = np.einsum('ij,ji->i', self._last_output.transpose(), U_upscaled)
@@ -198,13 +198,13 @@ class IntFilterLayer:
         self._S_n1_diag = 1 / self._S_diag
 
         # Z^T E(input) S^-1
-        self._Z_T__E_input__S_n1 = np.matmul(self._filter_matrix.transpose(), self._E_input * self._S_n1_diag)
+        self._Z_T__E_input__S_n1 = self._filter_matrix.transpose() @ (self._E_input * self._S_n1_diag)
 
         # k(Z^T E(input) S^-1)
         kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
 
         # A k(Z^T E(input) S^-1) S = M
-        self._last_output = np.matmul(self._A, kerneled) * self._S_diag
+        self._last_output = (self._A @ kerneled) * self._S_diag
 
         # A k(Z^T E(input) S^-1) S P
         #self._last_output = self.avg_pooling(self._before_pooling)

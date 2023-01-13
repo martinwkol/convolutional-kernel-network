@@ -57,15 +57,27 @@ class Network:
 
     def __init__(self, int_layers, output_weights):
         self._layers = int_layers
-        self._output_weights = output_weights
+        self.output_weights = output_weights
 
         self._last_output = None
+
+    @property
+    def input_size(self):
+        return self._layers[0].input_size
+    
+    @property
+    def output_size(self):
+        return self.output_weights.shape[0]
+
+    @property
+    def layers(self):
+        return self._layers
     
     def forward(self, x):
         for layer in self._layers:
             x = layer.forward(x)
             
-        self._last_output = np.einsum('jk,ijk->i', x, self._output_weights)
+        self._last_output = np.einsum('jk,ijk->i', x, self.output_weights)
         return self._last_output
 
     def gradients(self, loss_func, expected_output):
@@ -74,7 +86,7 @@ class Network:
 
         layer_gradients = [None] * len(self._layers)
         # TODO: find an even better variable name
-        grad_after_pooling = np.einsum('k,kij->ij', loss_func_gradient, self._output_weights)
+        grad_after_pooling = np.einsum('k,kij->ij', loss_func_gradient, self.output_weights)
         grad_upscaled = grad_after_pooling
         output_after_pooling = self._layers[len(self._layers) - 1].last_output
         

@@ -2,7 +2,7 @@ from copy import deepcopy
 import numpy as np
 
 class Optimizer:
-    def __init__(self, loss_function, network = None, output_activation_func = None, max_loss_increase = 2):
+    def __init__(self, loss_function, network = None, output_activation_func = None):
         self.loss_function = loss_function
         self.network = network
         # TODO: find better name

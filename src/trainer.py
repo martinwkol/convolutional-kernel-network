@@ -16,9 +16,9 @@ class Trainer:
         self.best_network = network
 
     def train(self, epochs):
-        self.optimizer.set_network(network=self.network)
-
         for _ in range(epochs):
+            self.optimizer.set_network(network=self.network)
+            
             permutation = np.random.permutation(len(self.train_input))
             loss_sum = 0
             optimized_data_counter = 0

@@ -13,9 +13,10 @@ class Optimizer:
 
     
     def set_network(self, network):
-        self.network = network
-        self.loss_sum = 0
-        self.gradent_sum = None
+        if self.network is not network:
+            self.network = network
+            self.loss_sum = 0
+            self.gradent_sum = None
 
 
     def step(self, training_input, expected_output):

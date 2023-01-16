@@ -42,7 +42,7 @@ class Optimizer:
         self.gradent_sum[1] += gradients[1]
 
 
-    def optim(self, learning_rate):
+    def optim(self, learning_rate, regularization_parameter):
         # TODO: network is NULL except
 
         for j in range(len(self.gradent_sum[0])):
@@ -54,7 +54,8 @@ class Optimizer:
             norms = np.linalg.norm(new_filter_matrix, axis = 0)
             self.network._layers[j].update_filter_matrix(new_filter_matrix / norms)
         
-        self.network.output_weights -= learning_rate * self.gradent_sum[1]
+        self.network.output_weights -= \
+            learning_rate * (self.gradent_sum[1] + regularization_parameter * self.network.output_weights)
 
         loss = self.loss_sum 
         self.loss_sum = 0

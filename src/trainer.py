@@ -2,10 +2,11 @@ import numpy as np
 from copy import deepcopy
 
 class Trainer:
-    def __init__(self, network, optimizer, learning_rate, batch_size, train_input, train_output):
+    def __init__(self, network, optimizer, learning_rate, regularization_parameter, batch_size, train_input, train_output):
         self.network = network
         self.optimizer = optimizer
         self.learning_rate = learning_rate
+        self.regularization_parameter = regularization_parameter
         self.batch_size = batch_size
         self.train_input = train_input
         self.train_output = train_output
@@ -27,7 +28,7 @@ class Trainer:
                 self.batch_counter += 1
 
                 if self.batch_counter >= self.batch_size:
-                    loss_sum += self.optimizer.optim(self.learning_rate)
+                    loss_sum += self.optimizer.optim(self.learning_rate, self.regularization_parameter)
                     optimized_data_counter += self.batch_counter
                     self.batch_counter = 0
 

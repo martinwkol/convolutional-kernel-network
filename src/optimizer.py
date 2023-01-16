@@ -10,6 +10,7 @@ class Optimizer:
 
         self.loss_sum = 0
         self.gradent_sum = None
+        self.num_steps = 0
 
     
     def set_network(self, network):
@@ -17,6 +18,7 @@ class Optimizer:
             self.network = network
             self.loss_sum = 0
             self.gradent_sum = None
+            self.num_steps = 0
 
 
     def step(self, training_input, expected_output):
@@ -39,27 +41,33 @@ class Optimizer:
                 continue
             self.gradent_sum[0][j] += gradients[0][j]
 
-
         self.gradent_sum[1] += gradients[1]
+
+        self.num_steps += 1
 
 
     def optim(self, learning_rate, regularization_parameter):
         # TODO: network is NULL except
+        if self.num_steps == 0:
+            return
+
+        grad_sum_scalar = learning_rate / self.num_steps
 
         for j in range(len(self.gradent_sum[0])):
             if self.gradent_sum[0][j] is None:
                 continue
 
             new_filter_matrix = self.network.layers[j].filter_matrix - \
-                                learning_rate * self.gradent_sum[0][j] 
+                                grad_sum_scalar * self.gradent_sum[0][j] 
             norms = np.linalg.norm(new_filter_matrix, axis = 0)
             self.network._layers[j].update_filter_matrix(new_filter_matrix / norms)
         
-        self.network.output_weights -= \
-            learning_rate * (self.gradent_sum[1] + regularization_parameter * self.network.output_weights)
+        self.network.output_weights -= grad_sum_scalar * self.gradent_sum[1] 
+        self.network.output_weights *= 1 - learning_rate * regularization_parameter
 
         loss = self.loss_sum 
         self.loss_sum = 0
         self.gradent_sum = None
+        self.num_steps = 0
 
         return loss

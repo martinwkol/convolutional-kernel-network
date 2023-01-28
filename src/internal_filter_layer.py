@@ -63,18 +63,18 @@ class IntFilterLayer:
 
         # Z
         self._filter_matrix = filter_matrix
-        # Z^T * Z
+        # Z^T Z
         self._Z_T__Z = filter_matrix.transpose() @ filter_matrix
-        # k(Z^T * Z) + eI
-        m = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
+        # k(Z^T Z) + eI
+        k_Z_T__Z__eI = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
         # TODO: catch error if this fails
-        evalues, evectors = np.linalg.eigh(m)
+        evalues, evectors = np.linalg.eigh(k_Z_T__Z__eI)
         evalues_n1_4 = np.power(evalues, -1/4)
         evalues_n1_2 = evalues_n1_4 * evalues_n1_4
         evalues_n3_4 = evalues_n1_2 * evalues_n1_4
         
-        # A = k(Z^T * Z) ^ -1/2
+        # A = k(Z^T Z) ^ -1/2
         self._A = (evectors * evalues_n1_2) @ evectors.transpose()
         # A^1/2
         self._A_1_2 = (evectors * evalues_n1_4) @ evectors.transpose()

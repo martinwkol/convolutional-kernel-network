@@ -123,7 +123,6 @@ class IntFilterLayer:
                 channel_offset += self._in_channels
 
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            without_padding = np.empty((self._in_channels, self._input_size[0], self._input_size[1]))
             without_padding =  \
                 result_mx[:, self._zero_padding[0] : self._input_size[0] + self._zero_padding[0], 
                             self._zero_padding[1] : self._input_size[1] + self._zero_padding[1]]

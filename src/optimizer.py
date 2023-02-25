@@ -2,11 +2,9 @@ from copy import deepcopy
 import numpy as np
 
 class Optimizer:
-    def __init__(self, loss_function, network, output_activation_func = None):
+    def __init__(self, loss_function, network):
         self.loss_function = loss_function
         self._network = None
-        # TODO: find better name
-        self.output_activation_func = output_activation_func if output_activation_func is not None else lambda x: x
 
         self.set_network(network)
 
@@ -26,8 +24,7 @@ class Optimizer:
     def step(self, training_input, expected_output):
         # TODO: network is NULL except
 
-        pred_raw = self._network.forward(training_input)
-        pred = self.output_activation_func(pred_raw)
+        pred = self._network.forward(training_input)
 
         self.loss_sum += self.loss_function.loss(predicted=pred, expected=expected_output)
 

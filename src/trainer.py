@@ -2,8 +2,7 @@ import numpy as np
 from copy import deepcopy
 
 class Trainer:
-    def __init__(self, network, optimizer, learning_rate, regularization_parameter, batch_size, train_input, train_output):
-        self.network = network
+    def __init__(self, optimizer, learning_rate, regularization_parameter, batch_size, train_input, train_output):
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.regularization_parameter = regularization_parameter
@@ -13,12 +12,10 @@ class Trainer:
 
         self.batch_counter = 0
         self.last_average_loss = float('inf')
-        self.best_network = network
+        self.best_network = deepcopy(self.optimizer.network)
 
     def train(self, epochs):
-        for _ in range(epochs):
-            self.optimizer.set_network(network=self.network)
-            
+        for _ in range(epochs):            
             permutation = np.random.permutation(len(self.train_input))
             loss_sum = 0
             optimized_data_counter = 0
@@ -35,9 +32,9 @@ class Trainer:
             average_loss = loss_sum / optimized_data_counter
             if average_loss < self.last_average_loss:
                 self.last_average_loss = average_loss
-                self.best_network = deepcopy(self.network)
+                self.best_network = deepcopy(self.optimizer.network)
 
             elif average_loss > self.last_average_loss:
-                self.network = deepcopy(self.best_network)
+                self.optimizer.set_network(deepcopy(self.best_network))
                 self.learning_rate /= 2
 

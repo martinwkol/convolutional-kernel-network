@@ -1,5 +1,6 @@
 import numpy as np
 from layer_base import IntLayerBase
+from gradient_calculation_info import GradientCalculationInfo
 
 class IntPoolingLayer(IntLayerBase):
     def __init__(self, input_size, in_channels, pooling_size):
@@ -20,6 +21,17 @@ class IntPoolingLayer(IntLayerBase):
     @property
     def last_output(self):
         return self._last_output
+
+    
+    def compute_gradient(self, gradient_calculation_info):
+        gci = gradient_calculation_info
+        new_info = GradientCalculationInfo(
+            next_filter_layer_input=gci.next_filter_layer_input, 
+            next_U=gci.next_U, 
+            next_U_upscaled=self.backward(gci.next_U_upscaled),
+            layer_number=gci.layer_number - 1
+        )
+        return None, new_info
 
 
     def forward(self, U):

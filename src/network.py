@@ -2,6 +2,7 @@ import numpy as np
 import layer as lr
 from internal_filter_layer import IntFilterLayer
 from internal_pooling_layer import IntPoolingLayer
+from gradient_calculation_info import GradientCalculationInfo
 
 class Network:
     @staticmethod
@@ -50,23 +51,16 @@ class Network:
         output_weights_grad = np.einsum('i,jk->ijk', loss_func_gradient, self._layers[len(self._layers) - 1].last_output)
 
         layer_gradients = [None] * len(self._layers)
-        # TODO: find an even better variable name
-        grad_after_pooling = np.einsum('k,kij->ij', loss_func_gradient, self.output_weights)
-        grad_upscaled = grad_after_pooling
-        output_after_pooling = self._layers[len(self._layers) - 1].last_output
+
+        next_U = np.einsum('k,kij->ij', loss_func_gradient, self.output_weights)
+        gci = GradientCalculationInfo(
+            next_filter_layer_input=self._layers[len(self._layers) - 1].last_output,
+            next_U=next_U,
+            next_U_upscaled=next_U,
+            layer_number=len(self._layers)-1
+        )
         
         for i in reversed(range(len(self._layers))):
-            if isinstance(self._layers[i], IntFilterLayer):
-                B = self._layers[i].calculate_B(grad_upscaled)
-                C = self._layers[i].calculate_C(grad_after_pooling, output_after_pooling)
-                layer_gradients[i] = self._layers[i].g(B, C)
-
-                if i > 0:
-                    grad_after_pooling = self._layers[i].h(grad_upscaled, B)
-                    grad_upscaled = grad_after_pooling
-                    output_after_pooling = self._layers[i - 1].last_output
-            
-            elif isinstance(self._layers[i], IntPoolingLayer):
-                grad_upscaled = self._layers[i].backward(grad_upscaled)
+            layer_gradients[i], gci = self._layers[i].compute_gradient(gci)
         
         return layer_gradients, output_weights_grad

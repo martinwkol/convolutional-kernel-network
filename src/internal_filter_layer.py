@@ -1,5 +1,6 @@
 import numpy as np
 from layer_base import IntLayerBase
+from gradient_calculation_info import GradientCalculationInfo
 
 class IntFilterLayer(IntLayerBase):
     def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
@@ -44,6 +45,25 @@ class IntFilterLayer(IntLayerBase):
     @property
     def last_output(self): 
         return self._last_output
+
+    
+    def compute_gradient(self, gradient_calculation_info):
+        gci = gradient_calculation_info
+        B = self.calculate_B(gci.next_U_upscaled)
+        C = self.calculate_C(gci.next_U, gci.next_filter_layer_input)
+        gradient = self.g(B, C)
+
+        if gci.layer_number == 0:
+            return gradient, None
+
+        next_U = self.h(gci.next_U_upscaled, B)
+        new_info = GradientCalculationInfo(
+            next_filter_layer_input=self._last_input, 
+            next_U=next_U, 
+            next_U_upscaled=next_U,
+            layer_number=gci.layer_number-1
+        )
+        return gradient, new_info
 
 
     def update_filter_matrix(self, filter_matrix):
@@ -121,14 +141,15 @@ class IntFilterLayer(IntLayerBase):
 
 
     def calculate_B(self, U_upscaled):
+        # U_upscaled = U P^T
         # B = k'(Z^T E(input) S^-1) * (A U P^T)
         # TODO: add pooling
         return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
 
 
-    def calculate_C(self, U, output_after_pooling):
+    def calculate_C(self, U, next_filter_layer_input):
         # C = A^1/2 output U^T A^3/2
-        return (self._A_1_2 @ output_after_pooling) @ (U.transpose() @ self._A_3_2)
+        return (self._A_1_2 @ next_filter_layer_input) @ (U.transpose() @ self._A_3_2)
 
 
     def g(self, B, C):

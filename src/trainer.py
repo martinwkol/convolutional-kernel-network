@@ -35,6 +35,6 @@ class Trainer:
                 self.best_network = deepcopy(self.optimizer.network)
 
             elif average_loss > self.last_average_loss:
-                self.optimizer.set_network(deepcopy(self.best_network))
+                self.optimizer.network = deepcopy(self.best_network)
                 self.learning_rate /= 2
 

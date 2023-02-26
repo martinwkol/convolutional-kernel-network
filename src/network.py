@@ -47,10 +47,11 @@ class Network:
         return self._last_output
 
     def gradients(self, loss_func, expected_output):
-        loss_func_gradient = loss_func.gradient(self._last_output, expected_output)
-        output_weights_grad = np.einsum('i,jk->ijk', loss_func_gradient, self._layers[len(self._layers) - 1].last_output)
+        # layers + output_weights
+        gradients = [None] * (len(self._layers) + 1)
 
-        layer_gradients = [None] * len(self._layers)
+        loss_func_gradient = loss_func.gradient(self._last_output, expected_output)
+        gradients[-1] = np.einsum('i,jk->ijk', loss_func_gradient, self._layers[len(self._layers) - 1].last_output)
 
         next_U = np.einsum('k,kij->ij', loss_func_gradient, self.output_weights)
         gci = GradientCalculationInfo(
@@ -61,6 +62,6 @@ class Network:
         )
         
         for i in reversed(range(len(self._layers))):
-            layer_gradients[i], gci = self._layers[i].compute_gradient(gci)
+            gradients[i], gci = self._layers[i].compute_gradient(gci)
         
-        return layer_gradients, output_weights_grad
+        return gradients

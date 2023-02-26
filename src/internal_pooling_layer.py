@@ -31,7 +31,7 @@ class IntPoolingLayer(IntLayerBase):
             next_U_upscaled=self.backward(gci.next_U_upscaled),
             layer_number=gci.layer_number - 1
         )
-        return None, new_info
+        return 0, new_info
 
 
     def forward(self, U):

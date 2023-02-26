@@ -1,24 +1,21 @@
 import numpy as np
+from layer_base import IntLayerBase
 
-class IntPoolingLayer:
-    def __init__(self, input_size, pooling_size):
-        self._input_size = input_size
+class IntPoolingLayer(IntLayerBase):
+    def __init__(self, input_size, in_channels, pooling_size):
+        super().__init__(
+            input_size=input_size, 
+            output_size=(input_size[0] // pooling_size[0], input_size[1] // pooling_size[1]), 
+            in_channels=in_channels, 
+            out_channels=in_channels
+        )
+
         self._pooling_size = pooling_size
-        self._output_size = (input_size[0] // pooling_size[0], input_size[1] // pooling_size[1])
-
         self._last_output = None
-
-    @property
-    def input_size(self):
-        return self._input_size
 
     @property
     def pooling_size(self):
         return self._pooling_size
-
-    @property
-    def output_size(self):
-        return self._output_size
 
     @property
     def last_output(self):

@@ -1,18 +1,22 @@
 import numpy as np
+from layer_base import IntLayerBase
 
-class IntFilterLayer:
+class IntFilterLayer(IntLayerBase):
     def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
-        self._input_size = input_size
-        self._in_channels = in_channels
+        super().__init__(
+            input_size=input_size, 
+            output_size=(
+                input_size[0] + zero_padding[0] * 2 - (filter_size[0] - 1),
+                input_size[1] + zero_padding[1] * 2 - (filter_size[1] - 1)
+            ), 
+            in_channels=in_channels, 
+            out_channels=filter_matrix.shape[1]
+        )
+
         self._filter_size = filter_size
         self._dp_kernel = dp_kernel
         self._zero_padding = zero_padding
-
         self.update_filter_matrix(filter_matrix)
-
-        self._output_size = \
-                (self._input_size[0] + self._zero_padding[0] * 2 - (self.filter_size[0] - 1),
-                self._input_size[1] + self._zero_padding[1] * 2 - (self.filter_size[1] - 1))
 
         self._last_input = None
         self._last_output = None
@@ -20,22 +24,6 @@ class IntFilterLayer:
         self._S_diag = None
         self._S_n1_diag = None
         self._Z_T__E_input__S_n1 = None
-
-    @property
-    def input_size(self):
-        return self._input_size
-
-    @property
-    def output_size(self):
-        return self._output_size
-
-    @property
-    def in_channels(self):
-        return self._in_channels
-
-    @property
-    def out_channels(self):
-        return self._filter_matrix.shape[1]
 
     @property
     def filter_size(self):

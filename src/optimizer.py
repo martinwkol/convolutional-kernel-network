@@ -31,12 +31,12 @@ class Optimizer:
 
         gradients = self._network.gradients(loss_func=self.loss_function, expected_output=expected_output)
         
-        if self._gradent_sum is None:
-            self._gradent_sum = gradients
-            return
+        if self._gradent_sum is not None:
+            for j in range(len(gradients)):
+                self._gradent_sum[j] += gradients[j]
 
-        for j in range(len(gradients)):
-            self._gradent_sum[j] += gradients[j]
+        else:
+            self._gradent_sum = gradients
 
         self._num_steps += 1
 
@@ -49,13 +49,7 @@ class Optimizer:
         grad_sum_scalar = learning_rate / self._num_steps
 
         for j in range(len(self._gradent_sum) - 1):
-            if self._gradent_sum[j] is 0:
-                continue
-
-            new_filter_matrix = self.network.layers[j].filter_matrix - \
-                                grad_sum_scalar * self._gradent_sum[j] 
-            norms = np.linalg.norm(new_filter_matrix, axis = 0)
-            self.network._layers[j].update_filter_matrix(new_filter_matrix / norms)
+            self.network.layers[j].gradient_descent(grad_sum_scalar * self._gradent_sum[j])
         
         self.network.output_weights -= grad_sum_scalar * self._gradent_sum[-1] 
         self.network.output_weights *= 1 - learning_rate * regularization_parameter

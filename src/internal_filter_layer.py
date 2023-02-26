@@ -66,6 +66,12 @@ class IntFilterLayer(IntLayerBase):
         return gradient, new_info
 
 
+    def gradient_descent(self, descent):
+        new_filter_matrix = self._filter_matrix - descent
+        norms = np.linalg.norm(new_filter_matrix, axis = 0)
+        self.update_filter_matrix(new_filter_matrix / norms)
+
+
     def update_filter_matrix(self, filter_matrix):
         assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._in_channels
 

@@ -47,7 +47,7 @@ class Network:
         return self._last_output
 
     def gradients(self, loss_func, expected_output):
-        # layers + output_weights
+        # layers + one for output_weights
         gradients = [None] * (len(self._layers) + 1)
 
         loss_func_gradient = loss_func.gradient(self._last_output, expected_output)

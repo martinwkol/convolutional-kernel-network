@@ -27,3 +27,6 @@ class IntLayerBase:
 
     def compute_gradient(self, gradient_calculation_info):
         raise NotImplementedError()
+    
+    def gradient_descent(self, descent):
+        raise NotImplementedError()

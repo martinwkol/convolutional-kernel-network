@@ -32,6 +32,10 @@ class IntPoolingLayer(IntLayerBase):
             layer_number=gci.layer_number - 1
         )
         return 0, new_info
+    
+
+    def gradient_descent(self, descent):
+        pass
 
 
     def forward(self, U):

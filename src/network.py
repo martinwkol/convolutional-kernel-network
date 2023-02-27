@@ -20,6 +20,7 @@ class Network:
             size = (output_nodes, in_channels, input_size[0] * input_size[1])
             self.output_weights = np.random.normal(mu, sigma, size)
 
+        self._last_input = None
         self._last_output = None
 
     @property
@@ -33,8 +34,17 @@ class Network:
     @property
     def layers(self):
         return self._layers
+
+    @property
+    def last_input(self):
+        return self._last_input
+
+    @property
+    def last_output(self):
+        return self._last_output
     
     def forward(self, x):
+        self._last_input = x
         for layer in self._layers:
             x = layer.forward(x)
             

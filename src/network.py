@@ -5,25 +5,20 @@ from internal_pooling_layer import IntPoolingLayer
 from gradient_calculation_info import GradientCalculationInfo
 
 class Network:
-    @staticmethod
-    def create_random(input_size, in_channels, layers, output_nodes):
-        int_layers = []
+    def __init__(self, input_size, in_channels, layers, output_nodes, output_weights = None):
+        self._layers = []
         for layer in layers:
             new_layer = layer.build(input_size, in_channels)
             input_size = new_layer.output_size
             in_channels = new_layer.out_channels
 
-            int_layers.append(new_layer)
-        
-        output_weights = np.random.normal(0, 1 / np.sqrt(in_channels * input_size[0] * input_size[1]), 
-                                        size=(output_nodes, in_channels, input_size[0] * input_size[1]))
-        
-        return Network(int_layers, output_weights)
+            self._layers.append(new_layer)
 
-
-    def __init__(self, int_layers, output_weights):
-        self._layers = int_layers
         self.output_weights = output_weights
+        if self.output_weights is None:
+            mu, sigma = 0, 1 / np.sqrt(in_channels * input_size[0] * input_size[1])
+            size = (output_nodes, in_channels, input_size[0] * input_size[1])
+            self.output_weights = np.random.normal(mu, sigma, size)
 
         self._last_output = None
 

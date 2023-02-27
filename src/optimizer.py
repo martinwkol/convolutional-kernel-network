@@ -42,6 +42,7 @@ class Optimizer:
             return
 
         grad_sum_scalar = learning_rate / self._num_steps
+        regularization_term = np.sum(self.network.output_weights * self.network.output_weights) * regularization_parameter / 2
 
         for j in range(len(self._gradent_sum) - 1):
             self.network.layers[j].gradient_descent(grad_sum_scalar * self._gradent_sum[j])
@@ -49,7 +50,7 @@ class Optimizer:
         self.network.output_weights -= grad_sum_scalar * self._gradent_sum[-1] 
         self.network.output_weights *= 1 - learning_rate * regularization_parameter
 
-        loss = self._loss_sum 
+        loss = self._loss_sum / self._num_steps + regularization_term
         self.reset()
 
         return loss

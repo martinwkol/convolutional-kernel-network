@@ -2,11 +2,10 @@ from copy import deepcopy
 import numpy as np
 
 class Optimizer:
-    def __init__(self, loss_function, network):
-        self._network = None
-
+    def __init__(self, network, loss_function):
+        self._network = network
         self.loss_function = loss_function
-        self.network = network
+        self.reset()
 
     
     @property
@@ -17,9 +16,7 @@ class Optimizer:
     def network(self, network):
         if self._network is not network:
             self._network = network
-            self._loss_sum = 0
-            self._gradent_sum = None
-            self._num_steps = 0
+            self.reset()
 
 
     def step(self, training_input, expected_output):
@@ -53,8 +50,12 @@ class Optimizer:
         self.network.output_weights *= 1 - learning_rate * regularization_parameter
 
         loss = self._loss_sum 
+        self.reset()
+
+        return loss
+
+    
+    def reset(self):
         self._loss_sum = 0
         self._gradent_sum = None
         self._num_steps = 0
-
-        return loss

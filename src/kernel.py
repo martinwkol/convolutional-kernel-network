@@ -1,18 +1,19 @@
 import numpy as np
 
 class DotProductKernel:
-    def __init__(self, function, derivative):
-        self._function = function
-        self._derivative = derivative
-
     def func(self, x):
-        return self._function(x)
+        raise NotImplementedError()
 
     def deriv(self, x):
-        return self._derivative(x)
+        raise NotImplementedError()
 
-def get_rbf(alpha):
-    return DotProductKernel(
-        lambda x: np.exp((x - 1) * alpha), 
-        lambda x: alpha * np.exp((x - 1) * alpha)
-    )
+class RadialBasisFunction(DotProductKernel):
+    def __init__(self, alpha):
+        self.alpha = alpha
+
+    def func(self, x):
+        return np.exp((x - 1) * self.alpha)
+    
+    def deriv(self, x):
+        return self.alpha * np.exp((x - 1) * self.alpha)
+        

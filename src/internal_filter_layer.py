@@ -17,7 +17,8 @@ class IntFilterLayer(IntLayerBase):
         self._filter_size = filter_size
         self._dp_kernel = dp_kernel
         self._zero_padding = zero_padding
-        self.update_filter_matrix(filter_matrix)
+        
+        self.filter_matrix = filter_matrix
 
         self._last_input = None
         self._last_output = None
@@ -31,10 +32,6 @@ class IntFilterLayer(IntLayerBase):
         return self._filter_size
 
     @property
-    def filter_matrix(self):
-        return self._filter_matrix
-
-    @property
     def dp_kernel(self):
         return self._dp_kernel
 
@@ -46,33 +43,12 @@ class IntFilterLayer(IntLayerBase):
     def last_output(self): 
         return self._last_output
 
+    @property
+    def filter_matrix(self):
+        return self._filter_matrix
     
-    def compute_gradient(self, gradient_calculation_info):
-        gci = gradient_calculation_info
-        B = self.calculate_B(gci.next_U_upscaled)
-        C = self.calculate_C(gci.next_U, gci.next_filter_layer_input)
-        gradient = self.g(B, C)
-
-        if gci.layer_number == 0:
-            return gradient, None
-
-        next_U = self.h(gci.next_U_upscaled, B)
-        new_info = GradientCalculationInfo(
-            next_filter_layer_input=self._last_input, 
-            next_U=next_U, 
-            next_U_upscaled=next_U,
-            layer_number=gci.layer_number-1
-        )
-        return gradient, new_info
-
-
-    def gradient_descent(self, descent):
-        new_filter_matrix = self._filter_matrix - descent
-        norms = np.linalg.norm(new_filter_matrix, axis = 0)
-        self.update_filter_matrix(new_filter_matrix / norms)
-
-
-    def update_filter_matrix(self, filter_matrix):
+    @filter_matrix.setter
+    def filter_matrix(self, filter_matrix):
         assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._in_channels
 
         # Z
@@ -97,8 +73,109 @@ class IntFilterLayer(IntLayerBase):
         # A^3/2
         self._A_3_2 = (evectors * evalues_n3_4) @ evectors.transpose()
 
+    
+    def forward(self, input):
+        # output = A k(Z^T E(input) S^-1) S P
+        self._last_input = input
 
-    def extract_patches(self, input):
+        # E(input)
+        self._E_input = self._extract_patches(input)
+
+        # S (diagonal elements)
+        self._S_diag = np.linalg.norm(self._E_input, axis = 0)
+        # no 0 values
+        self._S_diag += np.full(len(self._S_diag), 0.00001)
+
+        # S^-1 (diagonal elements)
+        self._S_n1_diag = 1 / self._S_diag
+
+        # Z^T E(input) S^-1
+        self._Z_T__E_input__S_n1 = self._filter_matrix.transpose() @ (self._E_input * self._S_n1_diag)
+
+        # k(Z^T E(input) S^-1)
+        kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
+
+        # A k(Z^T E(input) S^-1) S = M
+        self._last_output = (self._A @ kerneled) * self._S_diag
+
+        return self._last_output
+
+    
+    def compute_gradient(self, gradient_calculation_info):
+        gci = gradient_calculation_info
+        B = self._calculate_B(gci.next_U_upscaled)
+        C = self._calculate_C(gci.next_U, gci.next_filter_layer_input)
+        gradient = self._g(B, C)
+
+        if gci.layer_number == 0:
+            return gradient, None
+
+        next_U = self._h(gci.next_U_upscaled, B)
+        new_info = GradientCalculationInfo(
+            next_filter_layer_input=self._last_input, 
+            next_U=next_U, 
+            next_U_upscaled=next_U,
+            layer_number=gci.layer_number-1
+        )
+        return gradient, new_info
+
+
+    def gradient_descent(self, descent):
+        new_filter_matrix = self._filter_matrix - descent
+        norms = np.linalg.norm(new_filter_matrix, axis = 0)
+        self.filter_matrix = new_filter_matrix / norms
+
+    
+    def _calculate_B(self, U_upscaled):
+        # U_upscaled = U P^T
+        # B = k'(Z^T E(input) S^-1) * (A U P^T)
+        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
+
+
+    def _calculate_C(self, U, next_filter_layer_input):
+        # C = A^1/2 output U^T A^3/2
+        return (self._A_1_2 @ next_filter_layer_input) @ (U.transpose() @ self._A_3_2)
+
+
+    def _g(self, B, C):
+        # g(U) = E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
+
+        # E(input) B^T
+        E_input__B_T = self._E_input @ B.transpose()
+
+        # k'(Z^T Z) * (C + C^T)
+        k_d_Z_T__Z__mul__C_plus_C_T = self._k_d_Z_T__Z * (C + C.transpose())
+
+        # E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
+        g_U = E_input__B_T - (1/2 * self.filter_matrix) @ k_d_Z_T__Z__mul__C_plus_C_T
+
+        return g_U
+
+
+    def _h(self, U_upscaled, B):
+        # U_upscaled = U P^T
+        # X = S^-2 * (M^T U P^T - E(input)^T Z B))    (X is a diagonal matrix)
+        # h(U) = E_adj( Z B + E(input) X )
+
+        # Z B
+        Z_B = self.filter_matrix @ B
+
+        # M^T U P^T         (diagonal elements)
+        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._last_output.transpose(), U_upscaled)
+
+        # E(input)^T Z B    (diagonal elements)
+        E_input_T__Z__B__diag = np.einsum('ij,ji->i', self._E_input.transpose(), Z_B)
+
+        # X = S^-2 * (M^T U P^T - E(input)^T Z B))      (diagonal elements)
+        X_diag = self._S_n1_diag * self._S_n1_diag * (M_T__U__P_T__diag - E_input_T__Z__B__diag)
+        
+        # h(U) = E_adj( Z B + E(input) X )
+        h_U = self._extract_patches_adj(Z_B + self._E_input * X_diag)
+
+        return h_U
+
+
+    def _extract_patches(self, input):
         input = np.reshape(input, (self._in_channels, self._input_size[0], self._input_size[1]))
 
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
@@ -121,7 +198,7 @@ class IntFilterLayer(IntLayerBase):
         return patch_mx
     
 
-    def extract_patches_adj(self, mx):        
+    def _extract_patches_adj(self, mx):        
         mx = np.reshape(mx, (self._in_channels * self._filter_size[0] * self._filter_size[1],
                             self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
                             self._input_size[1] + self._zero_padding[1] * 2 - (self._filter_size[1] - 1)))
@@ -146,85 +223,5 @@ class IntFilterLayer(IntLayerBase):
 
         result_mx = np.reshape(result_mx, (self._in_channels, self._input_size[0] * self._input_size[1]))
         return result_mx
-
-
-    def calculate_B(self, U_upscaled):
-        # U_upscaled = U P^T
-        # B = k'(Z^T E(input) S^-1) * (A U P^T)
-        # TODO: add pooling
-        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
-
-
-    def calculate_C(self, U, next_filter_layer_input):
-        # C = A^1/2 output U^T A^3/2
-        return (self._A_1_2 @ next_filter_layer_input) @ (U.transpose() @ self._A_3_2)
-
-
-    def g(self, B, C):
-        # g(U) = E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
-
-        # E(input) B^T
-        E_input__B_T = self._E_input @ B.transpose()
-
-        # k'(Z^T Z) * (C + C^T)
-        k_d_Z_T__Z__mul__C_plus_C_T = self._k_d_Z_T__Z * (C + C.transpose())
-
-        # E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
-        g_U = E_input__B_T - (1/2 * self.filter_matrix) @ k_d_Z_T__Z__mul__C_plus_C_T
-
-        return g_U
-
-
-    def h(self, U_upscaled, B):
-        # U_upscaled = U P^T
-        # X = S^-2 * (M^T U P^T - E(input)^T Z B))    (X is a diagonal matrix)
-        # h(U) = E_adj( Z B + E(input) X )
-
-        # Z B
-        Z_B = self.filter_matrix @ B
-
-        # M^T U P^T         (diagonal elements)
-        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._last_output.transpose(), U_upscaled)
-
-        # E(input)^T Z B    (diagonal elements)
-        E_input_T__Z__B__diag = np.einsum('ij,ji->i', self._E_input.transpose(), Z_B)
-
-        # X = S^-2 * (M^T U P^T - E(input)^T Z B))      (diagonal elements)
-        X_diag = self._S_n1_diag * self._S_n1_diag * (M_T__U__P_T__diag - E_input_T__Z__B__diag)
-        
-        # h(U) = E_adj( Z B + E(input) X )
-        h_U = self.extract_patches_adj(Z_B + self._E_input * X_diag)
-
-        return h_U
-
-
-    def forward(self, input):
-        # output = A k(Z^T E(input) S^-1) S P
-        self._last_input = input
-
-        # E(input)
-        self._E_input = self.extract_patches(input)
-
-        # S (diagonal elements)
-        self._S_diag = np.linalg.norm(self._E_input, axis = 0)
-        # no 0 values
-        self._S_diag += np.full(len(self._S_diag), 0.00001)
-
-        # S^-1 (diagonal elements)
-        self._S_n1_diag = 1 / self._S_diag
-
-        # Z^T E(input) S^-1
-        self._Z_T__E_input__S_n1 = self._filter_matrix.transpose() @ (self._E_input * self._S_n1_diag)
-
-        # k(Z^T E(input) S^-1)
-        kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
-
-        # A k(Z^T E(input) S^-1) S = M
-        self._last_output = (self._A @ kerneled) * self._S_diag
-
-        # A k(Z^T E(input) S^-1) S P
-        #self._last_output = self.avg_pooling(self._before_pooling)
-
-        return self._last_output
 
     

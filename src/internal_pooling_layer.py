@@ -38,9 +38,10 @@ class IntPoolingLayer(IntLayerBase):
         pass
 
 
-    def forward(self, U):
-        self._last_output = self._avg_pooling(U)
+    def forward(self, input):
+        self._last_output = self._avg_pooling(input)
         return self._last_output
+        
 
     def backward(self, U):
         return self._avg_pooling_t(U)

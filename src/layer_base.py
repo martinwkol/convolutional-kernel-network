@@ -25,6 +25,9 @@ class IntLayerBase:
     def out_channels(self):
         return self._out_channels
 
+    def forward(self, input):
+        raise NotImplementedError()
+
     def compute_gradient(self, gradient_calculation_info):
         raise NotImplementedError()
     

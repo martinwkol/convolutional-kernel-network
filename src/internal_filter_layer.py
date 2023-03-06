@@ -103,18 +103,18 @@ class IntFilterLayer(IntLayerBase):
     
     def compute_gradient(self, gradient_calculation_info):
         gci = gradient_calculation_info
-        B = self._calculate_B(gci.next_U_upscaled)
-        C = self._calculate_C(gci.next_U, gci.next_filter_layer_input)
+        B = self._calculate_B(gci.U_upscaled)
+        C = self._calculate_C(gci.U, gci.last_output_after_pooling)
         gradient = self._g(B, C)
 
         if gci.layer_number == 0:
             return gradient, None
 
-        next_U = self._h(gci.next_U_upscaled, B)
+        U = self._h(gci.U_upscaled, B)
         new_info = GradientCalculationInfo(
-            next_filter_layer_input=self._last_input, 
-            next_U=next_U, 
-            next_U_upscaled=next_U,
+            last_output_after_pooling=self._last_input, 
+            U=U, 
+            U_upscaled=U,
             layer_number=gci.layer_number-1
         )
         return gradient, new_info

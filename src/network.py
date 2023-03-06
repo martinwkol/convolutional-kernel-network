@@ -56,11 +56,11 @@ class Network:
         gradients = [None] * (len(self._layers) + 1)
         gradients[-1] = np.einsum('i,jk->ijk', loss_func_gradient, self._layers[len(self._layers) - 1].last_output)
 
-        next_U = np.einsum('k,kij->ij', loss_func_gradient, self.output_weights)
+        U = np.einsum('k,kij->ij', loss_func_gradient, self.output_weights)
         gci = GradientCalculationInfo(
-            next_filter_layer_input=self._layers[len(self._layers) - 1].last_output,
-            next_U=next_U,
-            next_U_upscaled=next_U,
+            last_output_after_pooling=self._layers[len(self._layers) - 1].last_output,
+            U=U,
+            U_upscaled=U,
             layer_number=len(self._layers)-1
         )
         

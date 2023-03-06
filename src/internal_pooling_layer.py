@@ -26,9 +26,9 @@ class IntPoolingLayer(IntLayerBase):
     def compute_gradient(self, gradient_calculation_info):
         gci = gradient_calculation_info
         new_info = GradientCalculationInfo(
-            next_filter_layer_input=gci.next_filter_layer_input, 
-            next_U=gci.next_U, 
-            next_U_upscaled=self.backward(gci.next_U_upscaled),
+            last_output_after_pooling=gci.last_output_after_pooling, 
+            U=gci.U, 
+            U_upscaled=self.backward(gci.U_upscaled),
             layer_number=gci.layer_number - 1
         )
         return 0, new_info
@@ -41,7 +41,7 @@ class IntPoolingLayer(IntLayerBase):
     def forward(self, input):
         self._last_output = self._avg_pooling(input)
         return self._last_output
-        
+
 
     def backward(self, U):
         return self._avg_pooling_t(U)

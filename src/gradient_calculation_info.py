@@ -1,6 +1,6 @@
 class GradientCalculationInfo:
-    def __init__(self, next_filter_layer_input, next_U, next_U_upscaled, layer_number):
-        self.next_filter_layer_input = next_filter_layer_input
-        self.next_U = next_U
-        self.next_U_upscaled = next_U_upscaled
+    def __init__(self, last_output_after_pooling, U, U_upscaled, layer_number):
+        self.last_output_after_pooling = last_output_after_pooling
+        self.U = U
+        self.U_upscaled = U_upscaled
         self.layer_number = layer_number

@@ -10,24 +10,25 @@ class Trainer:
         self.train_input = train_input
         self.train_output = train_output
 
-        self.batch_counter = 0
         self.last_average_loss = float('inf')
         self.best_network = deepcopy(self.optimizer.network)
 
     def train(self, epochs):
         for _ in range(epochs):            
             permutation = np.random.permutation(len(self.train_input))
+            permutation = permutation[:len(permutation) - (len(permutation) % self.batch_size)]
+            batch_counter = 0
             loss_sum = 0
             optimized_data_counter = 0
 
             for index in permutation:
                 self.optimizer.step(self.train_input[index], self.train_output[index])
-                self.batch_counter += 1
+                batch_counter += 1
 
-                if self.batch_counter >= self.batch_size:
+                if batch_counter >= self.batch_size:
                     loss_sum += self.optimizer.optim(self.learning_rate, self.regularization_parameter)
-                    optimized_data_counter += self.batch_counter
-                    self.batch_counter = 0
+                    optimized_data_counter += batch_counter
+                    batch_counter = 0
 
             average_loss = loss_sum / optimized_data_counter
             if average_loss < self.last_average_loss:

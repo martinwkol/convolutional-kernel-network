@@ -75,7 +75,6 @@ class IntFilterLayer(IntLayerBase):
 
     
     def forward(self, input):
-        # output = A k(Z^T E(input) S^-1) S P
         self._last_input = input
 
         # E(input)
@@ -95,7 +94,7 @@ class IntFilterLayer(IntLayerBase):
         # k(Z^T E(input) S^-1)
         kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
 
-        # A k(Z^T E(input) S^-1) S = M
+        # M = A k(Z^T E(input) S^-1) S
         self._last_output = (self._A @ kerneled) * self._S_diag
 
         return self._last_output

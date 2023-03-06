@@ -79,6 +79,8 @@ class IntFilterLayer(IntLayerBase):
         self._filter_matrix = filter_matrix
         # Z^T Z
         self._Z_T__Z = filter_matrix.transpose() @ filter_matrix
+        # k'(Z^T Z)
+        self._k_d_Z_T__Z = self._dp_kernel.deriv(self._Z_T__Z)
         # k(Z^T Z) + eI
         k_Z_T__Z__eI = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
@@ -165,7 +167,7 @@ class IntFilterLayer(IntLayerBase):
         E_input__B_T = self._E_input @ B.transpose()
 
         # k'(Z^T Z) * (C + C^T)
-        k_d_Z_T__Z__mul__C_plus_C_T = self._dp_kernel.deriv(self._Z_T__Z) * (C + C.transpose())
+        k_d_Z_T__Z__mul__C_plus_C_T = self._k_d_Z_T__Z * (C + C.transpose())
 
         # E(input) B^T - 1/2 Z (k'(Z^T Z) * (C + C^T))
         g_U = E_input__B_T - (1/2 * self.filter_matrix) @ k_d_Z_T__Z__mul__C_plus_C_T

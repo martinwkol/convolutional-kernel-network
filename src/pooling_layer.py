@@ -1,8 +1,8 @@
 import numpy as np
-from layer_base import IntLayerBase
+from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
 
-class IntPoolingLayer(IntLayerBase):
+class PoolingLayer(LayerBase):
     def __init__(self, input_size, in_channels, pooling_size):
         super().__init__(
             input_size=input_size, 

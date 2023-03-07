@@ -1,8 +1,4 @@
 class LayerBase:
-    def build(self, input_size, in_channels):
-        raise NotImplementedError()
-
-class IntLayerBase:
     def __init__(self, input_size, output_size, in_channels, out_channels):
         self._input_size = input_size
         self._output_size = output_size

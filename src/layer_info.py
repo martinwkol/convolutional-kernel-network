@@ -1,10 +1,12 @@
-from layer_base import LayerBase
-from internal_filter_layer import IntFilterLayer
-from internal_pooling_layer import IntPoolingLayer
+from filter_layer import FilterLayer
+from pooling_layer import PoolingLayer
 import numpy as np
 
+class LayerInfoBase:
+    def build(self, input_size, in_channels):
+        raise NotImplementedError()
 
-class Filter(LayerBase):
+class FilterInfo(LayerInfoBase):
     def __init__(self, filter_size, out_channels, dp_kernel, zero_padding = 'same', filter_matrix = None):
         self.filter_size = filter_size
         self.out_channels = out_channels
@@ -33,7 +35,7 @@ class Filter(LayerBase):
 
         zero_padding = zero_padding_str2tuple(self.zero_padding)
 
-        return IntFilterLayer(
+        return FilterLayer(
             input_size=input_size, 
             in_channels=in_channels,
             filter_size=self.filter_size,
@@ -44,12 +46,12 @@ class Filter(LayerBase):
 
 
         
-class AvgPooling(LayerBase):
+class AvgPoolingInfo(LayerInfoBase):
     def __init__(self, filter_size):
         self.filter_size = filter_size
 
     def build(self, input_size, in_channels):
-        return IntPoolingLayer(
+        return PoolingLayer(
             input_size=input_size,
             in_channels=in_channels,
             pooling_size=self.filter_size

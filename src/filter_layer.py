@@ -1,8 +1,8 @@
 import numpy as np
-from layer_base import IntLayerBase
+from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
 
-class IntFilterLayer(IntLayerBase):
+class FilterLayer(LayerBase):
     def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
         super().__init__(
             input_size=input_size, 

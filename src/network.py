@@ -1,14 +1,11 @@
 import numpy as np
-import layer as lr
-from internal_filter_layer import IntFilterLayer
-from internal_pooling_layer import IntPoolingLayer
 from gradient_calculation_info import GradientCalculationInfo
 
 class Network:
-    def __init__(self, input_size, in_channels, layers, output_nodes, output_weights = None):
+    def __init__(self, input_size, in_channels, layer_infos, output_nodes, output_weights = None):
         self._layers = []
-        for layer in layers:
-            new_layer = layer.build(input_size, in_channels)
+        for layer_info in layer_infos:
+            new_layer = layer_info.build(input_size, in_channels)
             input_size = new_layer.output_size
             in_channels = new_layer.out_channels
 

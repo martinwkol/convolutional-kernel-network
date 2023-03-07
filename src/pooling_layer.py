@@ -28,7 +28,7 @@ class PoolingLayer(LayerBase):
         new_info = GradientCalculationInfo(
             last_output_after_pooling=gci.last_output_after_pooling, 
             U=gci.U, 
-            U_upscaled=self.backward(gci.U_upscaled),
+            U_upscaled=self.backward(gci.U_upscaled), # U P^T
             layer_number=gci.layer_number - 1
         )
         return 0, new_info

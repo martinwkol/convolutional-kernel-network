@@ -22,10 +22,19 @@ class FilterLayer(LayerBase):
 
         self._last_input = None
         self._last_output = None
+
+        # E(input)
         self._E_input = None
+
+        # S (diagonal elements)
         self._S_diag = None
+
+         # S^-1 (diagonal elements)
         self._S_n1_diag = None
+
+        # Z^T E(input) S^-1
         self._Z_T__E_input__S_n1 = None
+        
 
     @property
     def filter_size(self):

@@ -1,5 +1,5 @@
 from filter_layer import FilterLayer
-from pooling_layer import PoolingLayer
+from pooling_layer import PoolingLayer, GaussianPoolingLayer
 import numpy as np
 
 class LayerInfoBase:
@@ -47,13 +47,13 @@ class FilterInfo(LayerInfoBase):
 
         
 class AvgPoolingInfo(LayerInfoBase):
-    def __init__(self, filter_size):
-        self.filter_size = filter_size
+    def __init__(self, pooling_size):
+        self.pooling_size = pooling_size
 
     def build(self, input_size, in_channels):
         return PoolingLayer(
             input_size=input_size,
             in_channels=in_channels,
-            pooling_size=self.filter_size
+            pooling_size=self.pooling_size
         )
 

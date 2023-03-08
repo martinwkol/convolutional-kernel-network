@@ -1,5 +1,5 @@
 from filter_layer import FilterLayer
-from pooling_layer import PoolingLayer, GaussianPoolingLayer
+from pooling_layer import PoolingLayer
 import numpy as np
 
 class LayerInfoBase:

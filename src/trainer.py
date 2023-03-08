@@ -26,6 +26,10 @@ class Trainer:
         return len(self._average_loss_epoch) + 1
 
     @property
+    def epoch_size(self):
+        return len(self._permutation) 
+
+    @property
     def best_average_loss_epoch(self):
         return self._best_average_loss_epoch
 

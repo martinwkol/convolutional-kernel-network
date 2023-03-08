@@ -19,11 +19,11 @@ class Trainer:
     
     @property
     def batch(self):
-        return len(self._average_loss_batch)
+        return len(self._average_loss_batch) + 1
 
     @property
     def epoch(self):
-        return len(self._average_loss_epoch)
+        return len(self._average_loss_epoch) + 1
 
     @property
     def best_average_loss_epoch(self):

@@ -51,16 +51,29 @@ class Experiment:
         self.test_results_batch = []
 
     @staticmethod
-    def load(filepath):
+    def load(filepath, train_images, train_labels, test_images, test_labels):
         f = open(filepath, "rb")
         experiment = pickle.load(f)
         f.close()
+
+        experiment.trainer.set_training_data(train_images, train_labels)
+        experiment.test_images = test_images
+        experiment.test_labels = test_labels
+
         return experiment
 
     def save(self, filepath):
         f = open(filepath, "wb")
         pickle.dump(self, f)
         f.close()
+
+    def __getstate__(self):
+        return { k: v for (k, v) in self.__dict__.items() if k not in ["test_images", "test_labels"] }
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        self.test_images = None
+        self.test_labels = None
 
     def perform_experiment(self, epochs, batches_per_test=math.inf, num_test=math.inf):
         batches_per_test = min(batches_per_test, self.trainer.epoch_size)

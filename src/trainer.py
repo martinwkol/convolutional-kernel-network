@@ -15,6 +15,7 @@ class Trainer:
         self._best_average_loss_epoch = float('inf')
         self._average_loss_batch = []
         self._average_loss_epoch = []
+        self._learning_rates = []
 
     
     @property
@@ -102,6 +103,7 @@ class Trainer:
             if self._permutation_index >= len(self._permutation):
                 average_loss = self._loss_sum / self._optimized_data_counter
                 self._average_loss_epoch.append(average_loss)
+                self._learning_rates.append(self.learning_rate)
                 if average_loss < self._best_average_loss_epoch:
                     self._best_average_loss_epoch = average_loss
                     self.best_network = deepcopy(self.optimizer.network)

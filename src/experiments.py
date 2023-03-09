@@ -1,10 +1,11 @@
 import numpy as np
 import math
 import pickle
+from textwrap import dedent
 
 class TestResult:
     def __init__(self, network_pred):
-        self.network_pred = network_pred
+        self.network_pred = network_pred.astype(np.int64)
 
         self.tests_count = network_pred.sum()
         self.correct_count = network_pred.trace()
@@ -17,6 +18,27 @@ class TestResult:
         self.label_false_count = self.label_count - self.label_correct_count
         self.label_correct_portion = self.label_correct_count / self.label_count
         self.label_false_portion = self.label_false_count / self.label_count
+
+    
+    def __str__(self):
+        return dedent("""\
+        Test Result:
+        (true Label, network prediction)-table:
+        {}
+        
+        Tests count:        {}
+        Correct count:      {}
+        False count:        {}
+        Correct portion:    {}
+        False portion:      {}
+        
+        Labels count:           {}
+        Lables correct count:   {}
+        Lables false count:     {}
+        Lables correct portion: {}
+        Lables false portion:   {}""").format(self.network_pred, 
+            self.tests_count, self.correct_count, self.false_count, self.correct_portion, self.false_portion,
+            self.label_count, self.label_correct_count, self.label_false_count, np.round(self.label_correct_portion, 2), np.round(self.label_false_portion, 2))
         
 
 class Experiment:

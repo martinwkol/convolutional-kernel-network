@@ -41,7 +41,7 @@ class TestResult:
             self.label_count, self.label_correct_count, self.label_false_count, np.round(self.label_correct_portion, 2), np.round(self.label_false_portion, 2))
         
 
-class Experiment:
+class Analysis:
     def __init__(self, trainer, test_images, test_labels, num_labels):
         self.trainer = trainer
         self.test_images = test_images
@@ -53,14 +53,14 @@ class Experiment:
     @staticmethod
     def load(filepath, train_images, train_labels, test_images, test_labels):
         f = open(filepath, "rb")
-        experiment = pickle.load(f)
+        analysis = pickle.load(f)
         f.close()
 
-        experiment.trainer.set_training_data(train_images, train_labels)
-        experiment.test_images = test_images
-        experiment.test_labels = test_labels
+        analysis.trainer.set_training_data(train_images, train_labels)
+        analysis.test_images = test_images
+        analysis.test_labels = test_labels
 
-        return experiment
+        return analysis
 
     def save(self, filepath):
         f = open(filepath, "wb")
@@ -75,7 +75,7 @@ class Experiment:
         self.test_images = None
         self.test_labels = None
 
-    def perform_experiment(self, epochs, batches_per_test=math.inf, num_test=math.inf):
+    def perform_analysis(self, epochs, batches_per_test=math.inf, num_test=math.inf):
         batches_per_test = min(batches_per_test, self.trainer.epoch_size)
         batch_counter = 0
         for _ in range(epochs):

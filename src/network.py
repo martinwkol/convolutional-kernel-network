@@ -34,11 +34,13 @@ class Network:
 
         for layer in self.layers:
             x = layer.forward(x)
-            
+
         self.last_output = np.einsum('jk,ijk->i', x, self.output_weights)
         return self.last_output
 
     def gradients(self, loss_func_gradient):
+        """Compute the gradients for all filter layers and the output layer"""
+
         # Initialize gradients
         num_layers = len(self.layers)
         gradients = [None] * (num_layers + 1)

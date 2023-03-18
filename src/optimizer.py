@@ -20,8 +20,6 @@ class Optimizer:
 
 
     def step(self, training_input, expected_output):
-        # TODO: network is NULL except
-
         predicted = self._network.forward(training_input)
         self._loss_sum += self.loss_function.loss(predicted=predicted, expected=expected_output)
         loss_func_gradient = self.loss_function.gradient(self._network.last_output, expected_output)
@@ -38,7 +36,6 @@ class Optimizer:
 
 
     def optim(self, learning_rate, regularization_parameter):
-        # TODO: network is NULL except
         if self._num_steps == 0:
             return
 

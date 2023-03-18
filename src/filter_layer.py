@@ -60,26 +60,19 @@ class FilterLayer(LayerBase):
     def filter_matrix(self, filter_matrix):
         assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._in_channels
 
-        # Z
+        # Calculate Z^T Z, k'(Z^T Z), and k(Z^T Z) + eI
         self._filter_matrix = filter_matrix
-        # Z^T Z
         self._Z_T__Z = filter_matrix.transpose() @ filter_matrix
-        # k'(Z^T Z)
         self._k_d_Z_T__Z = self._dp_kernel.deriv(self._Z_T__Z)
-        # k(Z^T Z) + eI
         k_Z_T__Z__eI = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
-        # TODO: catch error if this fails
+        # Calculate A, A^(1/2), and A^(3/2)
         evalues, evectors = np.linalg.eigh(k_Z_T__Z__eI)
         evalues_n1_4 = np.power(evalues, -1/4)
         evalues_n1_2 = evalues_n1_4 * evalues_n1_4
         evalues_n3_4 = evalues_n1_2 * evalues_n1_4
-        
-        # A = k(Z^T Z) ^ -1/2
         self._A = (evectors * evalues_n1_2) @ evectors.transpose()
-        # A^1/2
         self._A_1_2 = (evectors * evalues_n1_4) @ evectors.transpose()
-        # A^3/2
         self._A_3_2 = (evectors * evalues_n3_4) @ evectors.transpose()
 
     
@@ -91,7 +84,7 @@ class FilterLayer(LayerBase):
 
         # S (diagonal elements)
         self._S_diag = np.linalg.norm(self._E_input, axis = 0)
-        # no 0 values
+        # avoid 0 entries so that we are able to invert S
         self._S_diag += np.full(len(self._S_diag), 0.00001)
 
         # S^-1 (diagonal elements)
@@ -184,25 +177,34 @@ class FilterLayer(LayerBase):
 
 
     def _extract_patches(self, input):
+        # Reshape input into a 3D matrix with shape (in_channels, input_size[0], input_size[1])
         input = np.reshape(input, (self._in_channels, self._input_size[0], self._input_size[1]))
 
+        # Add zero padding to the edges of the input if necessary
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            input = np.pad(input, ( (0, 0), (self._zero_padding[0], self._zero_padding[0]), 
-                                    (self._zero_padding[1], self._zero_padding[1])))
-       
+            input = np.pad(input, ((0, 0), (self._zero_padding[0], self._zero_padding[0]), 
+                                (self._zero_padding[1], self._zero_padding[1])))
+
+        # Calculate the size of the output patch matrix
         patch_mx_size = (self._in_channels * self._filter_size[0] * self._filter_size[1], 
                         input.shape[1] - (self._filter_size[0] - 1), 
                         input.shape[2] - (self._filter_size[1] - 1))
+        # Create an empty patch matrix with the calculated size
         patch_mx = np.empty(patch_mx_size)
 
+        # Loop over each pair (x_offset, y_offset) and save the values from the input matrix in the corresponding channels 
+        # in the patch matrix
         channel_offset = 0
-        for x_diff in range(self._filter_size[0]):
-            for y_diff in range(self._filter_size[1]):
+        for x_offset in range(self._filter_size[0]):
+            for y_offset in range(self._filter_size[1]):
+                # Extract patches from the input matrix
                 patch_mx[channel_offset : channel_offset + self._in_channels, :, :] = \
-                    input[:, x_diff : patch_mx_size[1] + x_diff, y_diff : patch_mx_size[2] + y_diff]
+                    input[:, x_offset : patch_mx_size[1] + x_offset, y_offset : patch_mx_size[2] + y_offset]
                 channel_offset += self._in_channels
 
+        # Reshape the patch matrix into a 2D matrix with shape (in_channels * filter_size[0] * filter_size[1], num_patches)
         patch_mx = np.reshape(patch_mx, (patch_mx_size[0], patch_mx_size[1] * patch_mx_size[2]))
+
         return patch_mx
     
 

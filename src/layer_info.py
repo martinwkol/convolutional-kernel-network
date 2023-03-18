@@ -24,7 +24,6 @@ class FilterInfo(LayerInfoBase):
             return filter_matrix / norms
 
         def zero_padding_str2tuple(zero_padding):
-            # TODO: is this correct for zero_padding == 'same'?
             return \
                 (0, 0) if zero_padding == 'none' else \
                 (self.filter_size[0] // 2, self.filter_size[1] // 2) if zero_padding == 'same' else \

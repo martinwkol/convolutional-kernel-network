@@ -50,6 +50,10 @@ class Analysis:
         self.test_results_epoch = []
         self.test_results_batch = []
 
+        initial_test_result = self.perform_test()
+        self.test_results_epoch.append(initial_test_result)
+        self.test_results_batch.append(initial_test_result)
+
     @staticmethod
     def load(filepath, train_images, train_labels, test_images, test_labels):
         f = open(filepath, "rb")

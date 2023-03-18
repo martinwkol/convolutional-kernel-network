@@ -1,36 +1,38 @@
+"""
+Most of this code was written by ChatGPT
+"""
+
+import os
+import urllib.request
+import gzip
 import numpy as np
 
-import sys
-import os
-import struct
-from array import array
-
 class MNIST:
-    def __init__(self, training_images_filepath,training_labels_filepath,
-                 test_images_filepath, test_labels_filepath):
-        self.train_images, self.train_labels = MNIST.read_images_labels(training_images_filepath, training_labels_filepath)
-        self.test_images, self.test_labels = MNIST.read_images_labels(test_images_filepath, test_labels_filepath)
-        
+    def __init__(self, directory_name = 'mnist'):
+        data_dir = MNIST.download_mnist(directory_name)
+
+        with gzip.open(os.path.join(data_dir, 'train-images-idx3-ubyte.gz'), 'rb') as f:
+            self.train_images = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 28*28) / 255
+        with gzip.open(os.path.join(data_dir, 'train-labels-idx1-ubyte.gz'), 'rb') as f:
+            self.train_labels = np.frombuffer(f.read(), np.uint8, offset=8)
+        with gzip.open(os.path.join(data_dir, 't10k-images-idx3-ubyte.gz'), 'rb') as f:
+            self.test_images = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 28*28) / 255
+        with gzip.open(os.path.join(data_dir, 't10k-labels-idx1-ubyte.gz'), 'rb') as f:
+            self.test_labels = np.frombuffer(f.read(), np.uint8, offset=8)
+
     @staticmethod
-    def read_images_labels(images_filepath, labels_filepath):
-        labels = []
-        with open(labels_filepath, 'rb') as file:
-            magic, size = struct.unpack(">II", file.read(8))
-            if magic != 2049:
-                raise ValueError('Magic number mismatch, expected 2049, got {}'.format(magic))
-            labels = array("B", file.read())        
-        
-        images = []
-        with open(images_filepath, 'rb') as file:
-            magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
-            if magic != 2051:
-                raise ValueError('Magic number mismatch, expected 2051, got {}'.format(magic))
-            image_data = array("B", file.read())        
-        for i in range(size):
-            images.append([0] * rows * cols)
-        for i in range(size):
-            img = np.array(image_data[i * rows * cols:(i + 1) * rows * cols]) / 255
-            img = img.reshape(28, 28)
-            images[i] = img            
-        
-        return images, labels
+    def download_mnist(directory_name):
+        base_url = 'http://yann.lecun.com/exdb/mnist/'
+        files = ['train-images-idx3-ubyte.gz', 'train-labels-idx1-ubyte.gz',
+                't10k-images-idx3-ubyte.gz', 't10k-labels-idx1-ubyte.gz']
+        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', directory_name)
+        os.makedirs(data_dir, exist_ok=True)
+
+        for file_name in files:
+            file_path = os.path.join(data_dir, file_name)
+
+            if not os.path.exists(file_path):
+                url = base_url + file_name
+                urllib.request.urlretrieve(url, file_path)
+
+        return data_dir

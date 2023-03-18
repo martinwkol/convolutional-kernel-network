@@ -14,7 +14,9 @@ class SquareHingeLoss(LossFunction):
     def loss(self, predicted, expected):
         loss_array_with_expected = np.maximum(self.margin + predicted - predicted[expected], 0)
         loss_array = loss_array_with_expected[np.arange(len(predicted)) != expected]
-        return loss_array.sum() ** 2 / len(loss_array)
+
+        loss = (loss_array.sum() ** 2) / len(loss_array)
+        return loss
     
     def gradient(self, predicted, expected):
         loss_array_with_expected = np.maximum(self.margin + predicted - predicted[expected], 0)
@@ -24,7 +26,8 @@ class SquareHingeLoss(LossFunction):
         grad[expected] = -np.count_nonzero(loss_array)
         grad *= 2 * loss_array.sum()
         
-        return grad / len(loss_array)
+        grad = grad / len(loss_array)
+        return grad
 
 class MeanSquaredError(LossFunction):
     def __init__(self):

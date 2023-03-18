@@ -3,58 +3,48 @@ from gradient_calculation_info import GradientCalculationInfo
 
 class Network:
     def __init__(self, input_size, in_channels, layer_infos, output_nodes, output_weights = None):
-        self._layers = []
-        for layer_info in layer_infos:
-            new_layer = layer_info.build(input_size, in_channels)
-            input_size = new_layer.output_size
-            in_channels = new_layer.out_channels
+        self.layers = []
 
-            self._layers.append(new_layer)
+        # Build the layers sequentially
+        for layer_info in layer_infos:
+            layer = layer_info.build(input_size, in_channels)
+            self.layers.append(layer)
+            input_size = layer.output_size
+            in_channels = layer.out_channels
+
+        # Initialize the output weights if not given
+        if output_weights is None:
+            mu, sigma = 0, 1 / np.sqrt(in_channels * input_size[0] * input_size[1])
+            output_weights = np.random.normal(mu, sigma, (output_nodes, in_channels, input_size[0] * input_size[1]))
 
         self.output_weights = output_weights
-        if self.output_weights is None:
-            mu, sigma = 0, 1 / np.sqrt(in_channels * input_size[0] * input_size[1])
-            size = (output_nodes, in_channels, input_size[0] * input_size[1])
-            self.output_weights = np.random.normal(mu, sigma, size)
-
-        self._last_input = None
-        self._last_output = None
+        self.last_input = None
+        self.last_output = None        
 
     @property
     def input_size(self):
-        return self._layers[0].input_size
+        return self.layers[0].input_size
     
     @property
     def output_size(self):
         return self.output_weights.shape[0]
-
-    @property
-    def layers(self):
-        return self._layers
-
-    @property
-    def last_input(self):
-        return self._last_input
-
-    @property
-    def last_output(self):
-        return self._last_output
     
     def forward(self, x):
-        self._last_input = x
-        for layer in self._layers:
+        self.last_input = x
+
+        for layer in self.layers:
             x = layer.forward(x)
             
-        self._last_output = np.einsum('jk,ijk->i', x, self.output_weights)
-        return self._last_output
+        self.last_output = np.einsum('jk,ijk->i', x, self.output_weights)
+        return self.last_output
 
     def gradients(self, loss_func_gradient):
         # Initialize gradients
-        num_layers = len(self._layers)
+        num_layers = len(self.layers)
         gradients = [None] * (num_layers + 1)
 
         # Compute gradient for output_weights
-        last_output = self._layers[num_layers - 1].last_output
+        last_output = self.layers[num_layers - 1].last_output
         gradients[-1] = np.einsum('i,jk->ijk', loss_func_gradient, last_output)
 
         # Compute gradient for all other layers
@@ -63,7 +53,7 @@ class Network:
                                       U=U,
                                       U_upscaled=U,
                                       layer_number=num_layers-1)
-        for i in reversed(range(len(self._layers))):
-            gradients[i], gci = self._layers[i].compute_gradient(gci)
+        for i in reversed(range(len(self.layers))):
+            gradients[i], gci = self.layers[i].compute_gradient(gci)
         
         return gradients

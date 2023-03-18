@@ -12,53 +12,33 @@ class Trainer:
 
         self.best_network = deepcopy(self.optimizer.network)
 
-        self._best_average_loss_epoch = float('inf')
-        self._average_loss_batch = []
-        self._average_loss_epoch = []
-        self._learning_rates = []
-
+        self.bestaverage_loss_epoch = float('inf')
+        self.average_loss_batch = []
+        self.average_loss_epoch = []
+        self.learning_rates = []
     
     @property
     def batch(self):
-        return len(self._average_loss_batch) + 1
+        return len(self.average_loss_batch) + 1
 
     @property
     def epoch(self):
-        return len(self._average_loss_epoch) + 1
+        return len(self.average_loss_epoch) + 1
 
     @property
     def epoch_size(self):
-        return len(self._permutation) 
-
-    @property
-    def best_average_loss_epoch(self):
-        return self._best_average_loss_epoch
-
-    @property
-    def average_loss_batch(self):
-        return self._average_loss_batch
-
-    @property
-    def average_loss_epoch(self):
-        return self._average_loss_epoch
-
-    @property
-    def batch_counter(self):
-        return self._batch_counter
-
-    @property
-    def epoch_counter(self):
-        return self._permutation_index
-
+        return len(self.permutation) 
 
     def __getstate__(self):
-        return { k: v for (k, v) in self.__dict__.items() if k not in ["_train_input", "_train_output"] }
+        state = self.__dict__.copy()
+        del state['_train_input']
+        del state['_train_output']
+        return state
 
-    def __setstate__(self, d):
-        self.__dict__ = d
+    def __setstate__(self, state):
+        self.__dict__.update(state)
         self._train_input = None
         self._train_output = None
-
 
     def set_training_data(self, train_input, train_output):
         assert len(train_input) == len(train_output)
@@ -67,59 +47,65 @@ class Trainer:
         self._train_output = train_output
         self._new_epoch()       
 
-
     def next_image(self):
         if self._train_input is None or self._train_output is None:
             raise TypeError("train_input or train_output is None")
 
-        index = self._permutation[self._permutation_index]
+        index = self.permutation[self.epoch_counter]
         self.optimizer.step(self._train_input[index], self._train_output[index])
-        self._batch_counter += 1
-        self._permutation_index += 1
+        self.batch_counter += 1
+        self.epoch_counter += 1
 
         self._check_batch_epoch()
 
-
     def finish_batch(self):
         self.next_image()
-        while self._batch_counter > 0:
+        while self.batch_counter > 0:
             self.next_image()    
-
 
     def finish_epoch(self):
         self.next_image()
-        while self._permutation_index > 0:
+        while self.epoch_counter > 0:
             self.next_image()
     
-    
     def _check_batch_epoch(self):
-        if self._batch_counter >= self.batch_size:
+        # Check if enough images have been processed to complete a batch
+        if self.batch_counter >= self.batch_size:
             loss_batch = self.optimizer.optim(self.learning_rate, self.regularization_parameter)
-            self._average_loss_batch.append(loss_batch)
-            self._loss_sum += loss_batch
-            self._optimized_data_counter += self._batch_counter
-            self._batch_counter = 0
-        
-            if self._permutation_index >= len(self._permutation):
-                average_loss = self._loss_sum / self._optimized_data_counter
-                self._average_loss_epoch.append(average_loss)
-                self._learning_rates.append(self.learning_rate)
-                if average_loss < self._best_average_loss_epoch:
-                    self._best_average_loss_epoch = average_loss
-                    self.best_network = deepcopy(self.optimizer.network)
+            self.average_loss_batch.append(loss_batch)
+            self.loss_sum += loss_batch
 
-                elif average_loss > self._best_average_loss_epoch:
+            self.optimized_data_counter += self.batch_counter
+            self.batch_counter = 0
+
+            # Check if all images in the epoch have been processed
+            if self.epoch_counter >= len(self.permutation):
+                average_loss = self.loss_sum / self.optimized_data_counter
+                self.average_loss_epoch.append(average_loss)
+                self.learning_rates.append(self.learning_rate)
+
+                # Check if the current epoch had the best average loss so far
+                if average_loss < self.bestaverage_loss_epoch:
+                    # If the current epoch had the best average loss so far, update the best average loss and copy the network
+                    self.bestaverage_loss_epoch = average_loss
+                    self.best_network = deepcopy(self.optimizer.network)
+                elif average_loss > self.bestaverage_loss_epoch:
+                    # Otherwise restore the best network and reduce the learning rate by half
                     self.optimizer.network = deepcopy(self.best_network)
                     self.learning_rate /= 2
                 
+                # Reset the counters for the batch and epoch, and start a new epoch
                 self._new_epoch()
 
-
     def _new_epoch(self):
-        self._permutation = np.random.permutation(len(self._train_input))
-        self._permutation = self._permutation[:len(self._permutation) - (len(self._permutation) % self.batch_size)]
-        self._permutation_index = 0
-        self._batch_counter = 0
-        self._loss_sum = 0
-        self._optimized_data_counter = 0
+        # Shuffle the indices of the training data
+        self.permutation = np.random.permutation(len(self._train_input))
+        # Discard any indices that would result in an incomplete batch
+        self.permutation = self.permutation[:len(self.permutation) - (len(self.permutation) % self.batch_size)]
+
+        # Set counters to 0
+        self.epoch_counter = 0
+        self.batch_counter = 0
+        self.loss_sum = 0
+        self.optimized_data_counter = 0
 

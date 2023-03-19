@@ -89,18 +89,22 @@ class PoolingLayer(LayerBase):
 
     def _avg_pooling_t(self, U):
         assert U.shape[1] == self._output_size[0] * self._output_size[1]
-        U_3d = np.reshape(U, (U.shape[0], self._output_size[0], self._output_size[1]))
 
-        upscaled_size = (U.shape[0], self._input_size[0], self._input_size[1])
-        upscaled = np.empty(upscaled_size)
+        # Reshape U into a 3D tensor
+        U_3d = U.reshape(-1, self._output_size[0], self._output_size[1])
 
-        for x in range(self._pooling_size[0]):
-            for y in range(self._pooling_size[1]):
-                upscaled[:, x : x + self._output_size[0] * self._pooling_size[0] : self._pooling_size[0], 
-                            y : y + self._output_size[1] * self._pooling_size[1] : self._pooling_size[1]] = U_3d
-        
-        upscaled[:, self._output_size[0] * self._pooling_size[0]::, :] = 0
-        upscaled[:, :, self._output_size[1] * self._pooling_size[1]::] = 0
+        # Upsample the 3D tensor by repeating values along the pooling dimensions
+        upscaled = np.repeat(np.repeat(U_3d, self.pooling_size[0], axis=1), self.pooling_size[1], axis=2)
 
-        upscaled /= self._pooling_size[0] * self._pooling_size[1]
-        return upscaled.reshape((upscaled_size[0], upscaled_size[1] * upscaled_size[2]))
+        # Pad the tensor with zeros if the input dimensions are not multiples of the pooling size
+        missing_x = self.input_size[0] - upscaled.shape[1]
+        missing_y = self.input_size[1] - upscaled.shape[2]
+        if missing_x > 0 or missing_y > 0:
+            upscaled = np.pad(upscaled, ((0, 0), (0, missing_x), (0, missing_y)))
+
+        # Normalize the values by the pooling size and reshape the tensor
+        upscaled /= self.pooling_size[0] * self.pooling_size[1]
+        upscaled = upscaled.reshape(-1, self.input_size[0] * self.input_size[1])
+
+        # Return the upscaled tensor
+        return upscaled

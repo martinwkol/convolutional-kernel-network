@@ -1,6 +1,7 @@
 import numpy as np
 from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
+import itertools
 
 class FilterLayer(LayerBase):
     def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
@@ -209,29 +210,32 @@ class FilterLayer(LayerBase):
     
 
     def _extract_patches_adj(self, mx):        
-        mx = np.reshape(mx, (self._in_channels * self._filter_size[0] * self._filter_size[1],
-                            self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
-                            self._input_size[1] + self._zero_padding[1] * 2 - (self._filter_size[1] - 1)))
+        mx = mx.reshape(-1, self.output_size[0], self.output_size[1])
 
-        result_mx = np.zeros((self._in_channels, 
-                            self._input_size[0] + self._zero_padding[0] * 2, 
-                            self._input_size[1] + self._zero_padding[1] * 2))
-
+        # Initialize a zero-filled array with the size of the original input with zero-padding
+        adj_patched = np.zeros((self._in_channels, self._input_size[0] + self._zero_padding[0] * 2, self._input_size[1] + self._zero_padding[1] * 2))
+        
+        # Sum all extracted patches to their original position
         channel_offset = 0
-        for x_diff in range(self._filter_size[0]):
-            for y_diff in range(self._filter_size[1]):
-                result_mx[:, x_diff : mx.shape[1] + x_diff, y_diff : mx.shape[2] + y_diff] += \
-                    mx[channel_offset : channel_offset + self._in_channels][:][:]
-                
-                channel_offset += self._in_channels
+        for x_diff, y_diff in itertools.product(range(self._filter_size[0]), range(self._filter_size[1])):
+            start_channel = x_diff * self._filter_size[1] + y_diff
+            end_channel = start_channel + self.in_channels
 
+            adj_patched[:, 
+                x_diff:self.output_size[0] + x_diff,
+                y_diff:self.output_size[1] + y_diff
+            ] += mx[start_channel:end_channel, :, :]
+
+        # If the input had zero padding, remove it from the result
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            without_padding =  \
-                result_mx[:, self._zero_padding[0] : self._input_size[0] + self._zero_padding[0], 
-                            self._zero_padding[1] : self._input_size[1] + self._zero_padding[1]]
-            result_mx = without_padding
+            start_x = self._zero_padding[0]
+            end_x = self._input_size[0] + self._zero_padding[0]
+            start_y = self._zero_padding[1]
+            end_y = self._input_size[1] + self._zero_padding[1]
 
-        result_mx = np.reshape(result_mx, (self._in_channels, self._input_size[0] * self._input_size[1]))
-        return result_mx
+            adj_patched = adj_patched[:, start_x:end_x, start_y:end_y]
+
+        adj_patched = adj_patched.reshape(-1, self._input_size[0] * self._input_size[1])
+        return adj_patched
 
     

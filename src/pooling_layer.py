@@ -11,17 +11,8 @@ class PoolingLayer(LayerBase):
             out_channels=in_channels
         )
 
-        self._pooling_size = pooling_size
-        self._last_output = None
-
-    @property
-    def pooling_size(self):
-        return self._pooling_size
-
-    @property
-    def last_output(self):
-        return self._last_output
-
+        self.pooling_size = pooling_size
+        self.last_output = None
     
     def compute_gradient(self, gradient_calculation_info):
         new_info = GradientCalculationInfo(
@@ -32,20 +23,16 @@ class PoolingLayer(LayerBase):
         )
 
         return 0, new_info
-    
 
     def gradient_descent(self, descent):
         pass
 
-
     def forward(self, input):
-        self._last_output = self._avg_pooling(input)
-        return self._last_output
-
+        self.last_output = self._avg_pooling(input)
+        return self.last_output
 
     def backward(self, U):
         return self._avg_pooling_t(U)
-
 
     def _avg_pooling(self, U):
         assert U.shape[1] == self._input_size[0] * self._input_size[1]
@@ -78,14 +65,12 @@ class PoolingLayer(LayerBase):
         )
 
         # Compute the average pooling over the last two dimensions of the view
-        pooled = pooling_view.sum(axis=(3, 4)) / (self._pooling_size[0] * self._pooling_size[1])
+        pooled = pooling_view.sum(axis=(3, 4)) / (self.pooling_size[0] * self.pooling_size[1])
         
         # Reshape pooled to a 2D tensor
         pooled = pooled.reshape(self.out_channels, -1)
         
         return pooled
-
-
 
     def _avg_pooling_t(self, U):
         assert U.shape[1] == self._output_size[0] * self._output_size[1]

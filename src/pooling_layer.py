@@ -49,18 +49,42 @@ class PoolingLayer(LayerBase):
 
     def _avg_pooling(self, U):
         assert U.shape[1] == self._input_size[0] * self._input_size[1]
-        U_3d = np.reshape(U, (U.shape[0], self._input_size[0], self._input_size[1]))
+        
+        # Reshape U to a 3D tensor
+        U_3d = U.reshape(self.out_channels, self._input_size[0], self._input_size[1])
 
-        pooled_size = (U.shape[0], self._output_size[0], self._output_size[1])
-        pooled = np.zeros(pooled_size)
+        # Compute the strides of the tensor U_3d
+        stride_channels = U_3d.strides[0]
+        stride_x = U_3d.strides[1]
+        stride_y = U_3d.strides[2]
+        
+        # Create a view of U_3d with the specified shape and strides
+        pooling_view = np.lib.stride_tricks.as_strided(
+            U_3d, 
+            shape=(
+                self.out_channels, 
+                self.output_size[0], 
+                self.output_size[1], 
+                self.pooling_size[0], 
+                self.pooling_size[1]
+            ),
+            strides=(
+                stride_channels, 
+                stride_x * self.pooling_size[0], 
+                stride_y * self.pooling_size[1], 
+                stride_x, 
+                stride_y
+            )
+        )
 
-        for x in range(self._pooling_size[0]):
-            for y in range(self._pooling_size[1]):
-                pooled += U_3d[:,   x : x + pooled_size[1] * self._pooling_size[0] : self._pooling_size[0], 
-                                    y : y + pooled_size[2] * self._pooling_size[1] : self._pooling_size[1]]
+        # Compute the average pooling over the last two dimensions of the view
+        pooled = pooling_view.sum(axis=(3, 4)) / (self._pooling_size[0] * self._pooling_size[1])
+        
+        # Reshape pooled to a 2D tensor
+        pooled = pooled.reshape(self.out_channels, -1)
+        
+        return pooled
 
-        pooled /= self._pooling_size[0] * self._pooling_size[1]
-        return pooled.reshape((pooled_size[0], pooled_size[1] * pooled_size[2]))
 
 
     def _avg_pooling_t(self, U):

@@ -72,12 +72,17 @@ class Analysis:
         f.close()
 
     def __getstate__(self):
-        return { k: v for (k, v) in self.__dict__.items() if k not in ["test_images", "test_labels"] }
+        # Exclude the specified attributes from the pickled object
+        excluded_attributes = ["test_images", "test_labels"]
+        return {k: v for k, v in self.__dict__.items() if k not in excluded_attributes}
 
-    def __setstate__(self, d):
-        self.__dict__ = d
-        self.test_images = None
-        self.test_labels = None
+    def __setstate__(self, state):
+        # Load the pickled object
+        self.__dict__ = state
+        
+        # Set excluded attributes to None if they exist
+        self.test_images = getattr(self, "test_images", None)
+        self.test_labels = getattr(self, "test_labels", None)
 
     def perform_analysis(self, epochs, batches_per_test=math.inf, num_test=math.inf):
         batches_per_test = min(batches_per_test, self.trainer.epoch_size)

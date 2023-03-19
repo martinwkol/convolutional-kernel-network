@@ -99,7 +99,7 @@ def create_analysis():
 
 
 def main():
-    mnist = MNIST('mnist_alt')
+    mnist = MNIST(directory='mnist_alt')
 
     trainer = create_mnist_trainer(data=mnist, model_layers=[
         li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),

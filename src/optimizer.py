@@ -3,9 +3,8 @@ import numpy as np
 
 class Optimizer:
     def __init__(self, network, loss_function):
-        self._network = network
+        self.network = network
         self.loss_function = loss_function
-        self.reset()
 
     @property
     def network(self):
@@ -13,7 +12,7 @@ class Optimizer:
 
     @network.setter
     def network(self, network):
-        if self._network is not network:
+        if getattr(self, '_network', None) is not network:
             self._network = network
             self.reset()
 

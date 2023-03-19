@@ -177,33 +177,26 @@ class FilterLayer(LayerBase):
 
 
     def _extract_patches(self, input):
-        # Reshape input into a 3D matrix with shape (in_channels, input_size[0], input_size[1])
-        input = np.reshape(input, (self._in_channels, self._input_size[0], self._input_size[1]))
+        input_3d = input.reshape(self.in_channels, self.input_size[0], self.input_size[1])
 
-        # Add zero padding to the edges of the input if necessary
+        # Add zero padding to the edges of the input matrix if necessary
         if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            input = np.pad(input, ((0, 0), (self._zero_padding[0], self._zero_padding[0]), 
-                                (self._zero_padding[1], self._zero_padding[1])))
+            padding = ((0, 0),) + tuple((p, p) for p in self._zero_padding)
+            input_3d = np.pad(input_3d, padding)
 
-        # Calculate the size of the output patch matrix
-        patch_mx_size = (self._in_channels * self._filter_size[0] * self._filter_size[1], 
-                        input.shape[1] - (self._filter_size[0] - 1), 
-                        input.shape[2] - (self._filter_size[1] - 1))
-        # Create an empty patch matrix with the calculated size
-        patch_mx = np.empty(patch_mx_size)
-
-        # Loop over each pair (x_offset, y_offset) and save the values from the input matrix in the corresponding channels 
-        # in the patch matrix
-        channel_offset = 0
-        for x_offset in range(self._filter_size[0]):
-            for y_offset in range(self._filter_size[1]):
-                # Extract patches from the input matrix
-                patch_mx[channel_offset : channel_offset + self._in_channels, :, :] = \
-                    input[:, x_offset : patch_mx_size[1] + x_offset, y_offset : patch_mx_size[2] + y_offset]
-                channel_offset += self._in_channels
-
-        # Reshape the patch matrix into a 2D matrix with shape (in_channels * filter_size[0] * filter_size[1], num_patches)
-        patch_mx = np.reshape(patch_mx, (patch_mx_size[0], patch_mx_size[1] * patch_mx_size[2]))
+        # Create a patch matrix by using numpy's stride_tricks.as_strided method to create a view of the input matrix
+        # with a sliding window over the input.
+        patch_mx = np.lib.stride_tricks.as_strided(
+            input_3d,
+            shape=(self.in_channels, self._filter_size[0], self._filter_size[1], self.output_size[0], self.output_size[1]),
+            strides=(
+                input_3d.strides[0], # stride for in_channel
+                input_3d.strides[1], # stride for rows
+                input_3d.strides[2], # stride for columns
+                input_3d.strides[1], # stride for rows
+                input_3d.strides[2]  # stride for columns
+            )
+        ).reshape(self.in_channels * self._filter_size[0] * self._filter_size[1], self.output_size[0] * self.output_size[1])
 
         return patch_mx
     

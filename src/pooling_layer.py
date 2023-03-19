@@ -24,13 +24,13 @@ class PoolingLayer(LayerBase):
 
     
     def compute_gradient(self, gradient_calculation_info):
-        gci = gradient_calculation_info
         new_info = GradientCalculationInfo(
-            last_output_after_pooling=gci.last_output_after_pooling, 
-            U=gci.U, 
-            U_upscaled=self.backward(gci.U_upscaled), # U P^T
-            layer_number=gci.layer_number - 1
+            last_output_after_pooling=gradient_calculation_info.last_output_after_pooling, 
+            U=gradient_calculation_info.U, 
+            U_upscaled=self.backward(gradient_calculation_info.U_upscaled), # U P^T
+            layer_number=gradient_calculation_info.layer_number - 1
         )
+
         return 0, new_info
     
 

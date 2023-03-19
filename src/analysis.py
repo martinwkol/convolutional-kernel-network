@@ -80,7 +80,7 @@ class Analysis:
         # Load the pickled object
         self.__dict__ = state
         
-        # Set excluded attributes to None if they exist
+        # Set excluded attributes to None if they don't exist
         self.test_images = getattr(self, "test_images", None)
         self.test_labels = getattr(self, "test_labels", None)
 

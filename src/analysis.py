@@ -88,8 +88,8 @@ class Analysis:
         batches_per_test = min(batches_per_test, self.trainer.epoch_size)
         num_tests_batch = min(num_tests_batch, len(self.test_images))
         num_tests_epoch = min(num_tests_epoch, len(self.test_images))
-        batch_counter = 0
         for _ in range(epochs):
+            batch_counter = 0
             while True:
                 self.trainer.finish_batch()
                 batch_counter += 1

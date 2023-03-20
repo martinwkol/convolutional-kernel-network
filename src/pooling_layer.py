@@ -1,6 +1,7 @@
 import numpy as np
 from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
+import pickle
 
 class PoolingLayer(LayerBase):
     def __init__(self, input_size, in_channels, pooling_size):
@@ -35,10 +36,10 @@ class PoolingLayer(LayerBase):
         return self._avg_pooling_t(U)
 
     def _avg_pooling(self, U):
-        assert U.shape[1] == self._input_size[0] * self._input_size[1]
+        assert U.shape[1] == self.input_size[0] * self.input_size[1]
         
         # Reshape U to a 3D tensor
-        U_3d = U.reshape(self.out_channels, self._input_size[0], self._input_size[1])
+        U_3d = U.reshape(self.out_channels, self.input_size[0], self.input_size[1])
 
         # Compute the strides of the tensor U_3d
         stride_channels = U_3d.strides[0]
@@ -73,10 +74,10 @@ class PoolingLayer(LayerBase):
         return pooled
 
     def _avg_pooling_t(self, U):
-        assert U.shape[1] == self._output_size[0] * self._output_size[1]
+        assert U.shape[1] == self.output_size[0] * self.output_size[1]
 
         # Reshape U into a 3D tensor
-        U_3d = U.reshape(-1, self._output_size[0], self._output_size[1])
+        U_3d = U.reshape(-1, self.output_size[0], self.output_size[1])
 
         # Upsample the 3D tensor by repeating values along the pooling dimensions
         upscaled = np.repeat(np.repeat(U_3d, self.pooling_size[0], axis=1), self.pooling_size[1], axis=2)
@@ -93,3 +94,35 @@ class PoolingLayer(LayerBase):
 
         # Return the upscaled tensor
         return upscaled
+
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        file.write(f"{PoolingLayer.__name__}\n".encode())
+        pickle.dump(
+            (
+                self.input_size, 
+                self.in_channels, 
+                self.pooling_size, 
+                self.last_output,
+            ), 
+            file
+        )
+
+    @staticmethod
+    def _derived_load_from_file(file):
+        (
+            input_size, 
+            in_channels, 
+            pooling_size, 
+            last_output,
+        ) = pickle.load(file)
+
+        pooling_layer = PoolingLayer(input_size, in_channels, pooling_size)
+        pooling_layer.last_output = last_output
+
+        return pooling_layer
+
+LayerBase.register_derived(PoolingLayer)

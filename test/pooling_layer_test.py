@@ -6,25 +6,14 @@ import os
 current_directory = os.path.dirname(os.path.realpath(__file__))
 parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
+sys.path.append("src/")
 
-from src.internal_pooling_layer import IntPoolingLayer
+from src.pooling_layer import PoolingLayer
 
 class LayerTest(unittest.TestCase):
-    @staticmethod
-    def random_filter_matrix(shape):
-        filter_mx = np.random.rand(shape[0], shape[1])
-        norms = np.linalg.norm(filter_mx, axis = 0)
-        return filter_mx * (1 / norms)
-
-    def setUp(self):
-        self.filter_mx_1x1x1 = LayerTest.random_filter_matrix((1*1*1, 2))
-        self.filter_mx_3x3x1 = LayerTest.random_filter_matrix((3*3*1, 2))
-        self.filter_mx_3x3x2 = LayerTest.random_filter_matrix((3*3*2, 2))
-
-
     def test_avg_pooling(self):
-        pl = IntPoolingLayer(
-            input_size=(5, 5), pooling_size=(2, 2),
+        pl = PoolingLayer(
+            input_size=(5, 5), in_channels=1, pooling_size=(2, 2),
         )
 
         U = np.array([[
@@ -46,8 +35,8 @@ class LayerTest(unittest.TestCase):
 
 
     def test_avg_pooling_t(self):
-        pl = IntPoolingLayer(
-            input_size=(5, 5), pooling_size=(2, 2),
+        pl = PoolingLayer(
+            input_size=(5, 5), in_channels=1, pooling_size=(2, 2),
         )
 
         U = np.array([[

@@ -1,6 +1,8 @@
 import numpy as np
 from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
+import itertools
+import pickle
 
 class FilterLayer(LayerBase):
     def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
@@ -14,14 +16,14 @@ class FilterLayer(LayerBase):
             out_channels=filter_matrix.shape[1]
         )
 
-        self._filter_size = filter_size
-        self._dp_kernel = dp_kernel
-        self._zero_padding = zero_padding
+        self.filter_size = filter_size
+        self.dp_kernel = dp_kernel
+        self.zero_padding = zero_padding
         
         self.filter_matrix = filter_matrix
 
-        self._last_input = None
-        self._last_output = None
+        self.last_input = None
+        self.last_output = None
 
         # E(input)
         self._E_input = None
@@ -33,24 +35,7 @@ class FilterLayer(LayerBase):
         self._S_n1_diag = None
 
         # Z^T E(input) S^-1
-        self._Z_T__E_input__S_n1 = None
-        
-
-    @property
-    def filter_size(self):
-        return self._filter_size
-
-    @property
-    def dp_kernel(self):
-        return self._dp_kernel
-
-    @property
-    def zero_padding(self):
-        return self._zero_padding
-
-    @property
-    def last_output(self): 
-        return self._last_output
+        self._Z_T__E_input__S_n1 = None    
 
     @property
     def filter_matrix(self):
@@ -58,13 +43,13 @@ class FilterLayer(LayerBase):
     
     @filter_matrix.setter
     def filter_matrix(self, filter_matrix):
-        assert filter_matrix.shape[0] == self._filter_size[0] * self._filter_size[1] * self._in_channels
+        assert filter_matrix.shape[0] == self.filter_size[0] * self.filter_size[1] * self.in_channels
 
         # Calculate Z^T Z, k'(Z^T Z), and k(Z^T Z) + eI
         self._filter_matrix = filter_matrix
         self._Z_T__Z = filter_matrix.transpose() @ filter_matrix
-        self._k_d_Z_T__Z = self._dp_kernel.deriv(self._Z_T__Z)
-        k_Z_T__Z__eI = self._dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
+        self._k_d_Z_T__Z = self.dp_kernel.deriv(self._Z_T__Z)
+        k_Z_T__Z__eI = self.dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
         # Calculate A, A^(1/2), and A^(3/2)
         evalues, evectors = np.linalg.eigh(k_Z_T__Z__eI)
@@ -77,7 +62,7 @@ class FilterLayer(LayerBase):
 
     
     def forward(self, input):
-        self._last_input = input
+        self.last_input = input
 
         # E(input)
         self._E_input = self._extract_patches(input)
@@ -94,12 +79,12 @@ class FilterLayer(LayerBase):
         self._Z_T__E_input__S_n1 = self._filter_matrix.transpose() @ (self._E_input * self._S_n1_diag)
 
         # k(Z^T E(input) S^-1)
-        kerneled = self._dp_kernel.func(self._Z_T__E_input__S_n1)
+        kerneled = self.dp_kernel.func(self._Z_T__E_input__S_n1)
 
         # M = A k(Z^T E(input) S^-1) S
-        self._last_output = (self._A @ kerneled) * self._S_diag
+        self.last_output = (self._A @ kerneled) * self._S_diag
 
-        return self._last_output
+        return self.last_output
 
     
     def compute_gradient(self, gradient_calculation_info):
@@ -113,7 +98,7 @@ class FilterLayer(LayerBase):
 
         U = self._h(gci.U_upscaled, B)
         new_info = GradientCalculationInfo(
-            last_output_after_pooling=self._last_input, 
+            last_output_after_pooling=self.last_input, 
             U=U, 
             U_upscaled=U,
             layer_number=gci.layer_number-1
@@ -130,7 +115,7 @@ class FilterLayer(LayerBase):
     def _calculate_B(self, U_upscaled):
         # U_upscaled = U P^T
         # B = k'(Z^T E(input) S^-1) * (A U P^T)
-        return self._dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
+        return self.dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
 
 
     def _calculate_C(self, U, next_filter_layer_input):
@@ -162,7 +147,7 @@ class FilterLayer(LayerBase):
         Z_B = self.filter_matrix @ B
 
         # M^T U P^T         (diagonal elements)
-        M_T__U__P_T__diag = np.einsum('ij,ji->i', self._last_output.transpose(), U_upscaled)
+        M_T__U__P_T__diag = np.einsum('ij,ji->i', self.last_output.transpose(), U_upscaled)
 
         # E(input)^T Z B    (diagonal elements)
         E_input_T__Z__B__diag = np.einsum('ij,ji->i', self._E_input.transpose(), Z_B)
@@ -177,54 +162,121 @@ class FilterLayer(LayerBase):
 
 
     def _extract_patches(self, input):
-        input_3d = input.reshape(self.in_channels, self.input_size[0], self.input_size[1])
+        # Reshape input into a 3D matrix with shape (in_channels, input_size[0], input_size[1])
+        input = np.reshape(input, (self.in_channels, self.input_size[0], self.input_size[1]))
 
-        # Add zero padding to the edges of the input matrix if necessary
-        if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            padding = ((0, 0),) + tuple((p, p) for p in self._zero_padding)
-            input_3d = np.pad(input_3d, padding)
+        # Add zero padding to the edges of the input if necessary
+        if self.zero_padding[0] > 0 or self.zero_padding[1] > 0:
+            input = np.pad(input, ((0, 0), (self.zero_padding[0], self.zero_padding[0]), 
+                                (self.zero_padding[1], self.zero_padding[1])))
 
-        # Create a patch matrix by using numpy's stride_tricks.as_strided method to create a view of the input matrix
-        # with a sliding window over the input.
-        patch_mx = np.lib.stride_tricks.as_strided(
-            input_3d,
-            shape=(self.in_channels, self._filter_size[0], self._filter_size[1], self.output_size[0], self.output_size[1]),
-            strides=(
-                input_3d.strides[0], # stride for in_channel
-                input_3d.strides[1], # stride for rows
-                input_3d.strides[2], # stride for columns
-                input_3d.strides[1], # stride for rows
-                input_3d.strides[2]  # stride for columns
-            )
-        ).reshape(self.in_channels * self._filter_size[0] * self._filter_size[1], self.output_size[0] * self.output_size[1])
+        # Calculate the size of the output patch matrix
+        patch_mx_size = (
+            self.in_channels * self.filter_size[0] * self.filter_size[1], 
+            self.output_size[0], 
+            self.output_size[1]
+        )
+        # Create an empty patch matrix with the calculated size
+        patch_mx = np.empty(patch_mx_size)
+
+        # Loop over each pair (x_offset, y_offset) and save the values from the input matrix in the corresponding channels 
+        # in the patch matrix
+        for x_offset, y_offset in itertools.product(range(self.filter_size[0]), range(self.filter_size[1])):
+            start_channel = (x_offset * self.filter_size[1] + y_offset) * self.in_channels
+            end_channel = start_channel + self.in_channels
+
+            # Extract patches from the input matrix
+            patch_mx[start_channel:end_channel, :, :] = input[
+                :, 
+                x_offset : self.output_size[0] + x_offset, 
+                y_offset : self.output_size[1] + y_offset
+            ]
+
+        # Reshape the patch matrix into a 2D matrix with shape (in_channels * filter_size[0] * filter_size[1], num_patches)
+        patch_mx = np.reshape(patch_mx, (patch_mx_size[0], patch_mx_size[1] * patch_mx_size[2]))
 
         return patch_mx
     
 
     def _extract_patches_adj(self, mx):        
-        mx = np.reshape(mx, (self._in_channels * self._filter_size[0] * self._filter_size[1],
-                            self._input_size[0] + self._zero_padding[0] * 2 - (self._filter_size[0] - 1),
-                            self._input_size[1] + self._zero_padding[1] * 2 - (self._filter_size[1] - 1)))
+        mx = mx.reshape(-1, self.output_size[0], self.output_size[1])
 
-        result_mx = np.zeros((self._in_channels, 
-                            self._input_size[0] + self._zero_padding[0] * 2, 
-                            self._input_size[1] + self._zero_padding[1] * 2))
-
+        # Initialize a zero-filled array with the size of the original input with zero-padding
+        adj_patched = np.zeros((self.in_channels, self.input_size[0] + self.zero_padding[0] * 2, self.input_size[1] + self.zero_padding[1] * 2))
+        
+        # Sum all extracted patches to their original position
         channel_offset = 0
-        for x_diff in range(self._filter_size[0]):
-            for y_diff in range(self._filter_size[1]):
-                result_mx[:, x_diff : mx.shape[1] + x_diff, y_diff : mx.shape[2] + y_diff] += \
-                    mx[channel_offset : channel_offset + self._in_channels][:][:]
-                
-                channel_offset += self._in_channels
+        for x_offset, y_offset in itertools.product(range(self.filter_size[0]), range(self.filter_size[1])):
+            start_channel = (x_offset * self.filter_size[1] + y_offset) * self.in_channels
+            end_channel = start_channel + self.in_channels
 
-        if self._zero_padding[0] > 0 or self._zero_padding[1] > 0:
-            without_padding =  \
-                result_mx[:, self._zero_padding[0] : self._input_size[0] + self._zero_padding[0], 
-                            self._zero_padding[1] : self._input_size[1] + self._zero_padding[1]]
-            result_mx = without_padding
+            adj_patched[:, 
+                x_offset:self.output_size[0] + x_offset,
+                y_offset:self.output_size[1] + y_offset
+            ] += mx[start_channel:end_channel, :, :]
 
-        result_mx = np.reshape(result_mx, (self._in_channels, self._input_size[0] * self._input_size[1]))
-        return result_mx
+        # If the input had zero padding, remove it from the result
+        if self.zero_padding[0] > 0 or self.zero_padding[1] > 0:
+            start_x = self.zero_padding[0]
+            end_x = self.input_size[0] + self.zero_padding[0]
+            start_y = self.zero_padding[1]
+            end_y = self.input_size[1] + self.zero_padding[1]
 
-    
+            adj_patched = adj_patched[:, start_x:end_x, start_y:end_y]
+
+        adj_patched = adj_patched.reshape(-1, self.input_size[0] * self.input_size[1])
+        return adj_patched
+
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        file.write(f"{FilterLayer.__name__}\n".encode())
+        pickle.dump(
+            (
+                self.input_size, 
+                self.in_channels, 
+                self.filter_size, 
+                self.filter_matrix, 
+                self.dp_kernel, 
+                self.zero_padding,
+                self.last_input,
+                self.last_output,
+                self._E_input,
+                self._S_diag,
+                self._S_n1_diag,
+                self._Z_T__E_input__S_n1,
+            ), 
+            file
+        )
+
+    @staticmethod
+    def _derived_load_from_file(file):
+        (
+            input_size, 
+            in_channels, 
+            filter_size, 
+            filter_matrix, 
+            dp_kernel, 
+            zero_padding,
+            last_input,
+            last_output,
+            _E_input,
+            _S_diag,
+            _S_n1_diag,
+            _Z_T__E_input__S_n1,
+        ) = pickle.load(file)
+
+        filter_layer = FilterLayer(input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding)
+        filter_layer.last_input = last_input
+        filter_layer.last_output = last_output
+        filter_layer._E_input = _E_input
+        filter_layer._S_diag = _S_diag
+        filter_layer._S_n1_diag = _S_n1_diag
+        filter_layer._Z_T__E_input__S_n1 = _Z_T__E_input__S_n1
+
+        return filter_layer
+
+
+LayerBase.register_derived(FilterLayer)

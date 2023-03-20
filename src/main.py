@@ -70,49 +70,91 @@ def train_network(trainer, epochs, batches_per_test, test_images, test_labels, n
 
 
 
-def create_analysis():
-    mnist = MNIST(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
-    
-    filepath = os.path.join(parent_directory, "analyses/Test.pick")
+def create_analysis(mnist, filepath, epochs, trainer, batches_per_test=100, num_tests_batch=1000, num_tests_epoch=math.inf):
+    if os.path.exists(filepath):
+        analysis = Analysis.load_from_file(filepath, mnist.train_images, mnist.train_labels, mnist.test_images, mnist.test_labels)
+    else:
+        analysis = Analysis(trainer, mnist.test_images, mnist.test_labels, num_labels=10)
 
-    trainer = create_mnist_trainer(data=mnist, model_layers=[
-        li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
-        li.AvgPoolingInfo(pooling_size=(3, 3)),
-
-        li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
-        li.AvgPoolingInfo(pooling_size=(3, 3)),
-
-        li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
-        
-    ])
-
-
-    analysis = Analysis(trainer, mnist.test_images, mnist.test_labels, num_labels=10)
-    for i in range(20):
+    while analysis.trainer.epoch <= epochs:
         print("Epoch {}".format(analysis.trainer.epoch))
         print("Learning rate {}".format(analysis.trainer.learning_rate))
-        analysis.perform_analysis(epochs=1, batches_per_test=5, num_test=300)
-        analysis.save(filepath=filepath)
+        analysis.perform_analysis(epochs=1, batches_per_test=batches_per_test, num_tests_batch=num_tests_batch)
+        analysis.save_to_file(filepath)
         print(str(analysis.test_results_epoch[-1]))
         print()
         print()
 
 
 def main():
-    mnist = MNIST(directory='mnist_alt')
+    mnist = MNIST(directory='mnist')
 
-    trainer = create_mnist_trainer(data=mnist, model_layers=[
-        li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
-        li.AvgPoolingInfo(pooling_size=(3, 3)),
+    create_analysis(
+        mnist=mnist, 
+        filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "../analyses/ana_3_3x3_layers_10_filters_3x3_pooling"),
+        epochs=20,
+        trainer=create_mnist_trainer(data=mnist, model_layers=[
+            li.FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
 
-        li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
-        li.AvgPoolingInfo(pooling_size=(3, 3)),
+            li.FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
 
-        li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
-        
-    ])
+            li.FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4))
+        ])
+    )
 
-    train_network(trainer=trainer, epochs=20, batches_per_test=100, test_images=mnist.test_images, test_labels=mnist.test_labels, num_tests_batch=1000)
+
+
+    create_analysis(
+        mnist=mnist, 
+        filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "../analyses/ana_3_5x5_layers_10_filters_3x3_pooling"),
+        epochs=20,
+        trainer=create_mnist_trainer(data=mnist, model_layers=[
+            li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
+
+            li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
+
+            li.FilterInfo(filter_size=(5, 5), zero_padding='same', out_channels=10, dp_kernel=kernel.RadialBasisFunction(alpha=4))
+        ])
+    )
+
+
+    create_analysis(
+        mnist=mnist, 
+        filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "../analyses/ana_3_3x3_2_1x1_layers_5_filters__3x3_pooling__zp"),
+        epochs=20,
+        trainer=create_mnist_trainer(data=mnist, model_layers=[
+            li.FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=5, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
+            li.FilterInfo(filter_size=(1, 1), zero_padding='same', out_channels=5, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+
+            li.FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=5, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
+            li.FilterInfo(filter_size=(1, 1), zero_padding='same', out_channels=5, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+
+            li.FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=5, dp_kernel=kernel.RadialBasisFunction(alpha=4))
+        ])
+    )
+
+
+
+    create_analysis(
+        mnist=mnist, 
+        filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "../analyses/ana_2_3x3_layers_15_filters__3x3_pooling__no_zp"),
+        epochs=20,
+        trainer=create_mnist_trainer(data=mnist, model_layers=[
+            li.FilterInfo(filter_size=(3, 3), zero_padding='none', out_channels=15, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+            li.AvgPoolingInfo(pooling_size=(3, 3)),
+
+            li.FilterInfo(filter_size=(3, 3), zero_padding='none', out_channels=15, dp_kernel=kernel.RadialBasisFunction(alpha=4)),
+        ])
+    )
+
+
+    #train_network(trainer=trainer, epochs=20, batches_per_test=100, test_images=mnist.test_images, test_labels=mnist.test_labels, num_tests_batch=1000)
 
 if __name__ == '__main__':
     main()

@@ -5,13 +5,13 @@ from optimizer import Optimizer
 from network import Network
 
 class Trainer:
-    def __init__(self, optimizer, learning_rate, regularization_parameter, batch_size, train_input, train_output):
+    def __init__(self, optimizer, learning_rate, regularization_parameter, batch_size, train_images, train_labels):
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.regularization_parameter = regularization_parameter
         self.batch_size = batch_size
-        self.train_input = train_input
-        self.train_output = train_output
+        self.train_images = train_images
+        self.train_labels = train_labels
         self._new_epoch()
 
         self.best_network = deepcopy(self.optimizer.network)
@@ -35,7 +35,7 @@ class Trainer:
 
     def next_image(self):
         index = self.permutation[self.epoch_counter]
-        self.optimizer.step(self.train_input[index], self.train_output[index])
+        self.optimizer.step(self.train_images[index], self.train_labels[index])
         self.batch_counter += 1
         self.epoch_counter += 1
 
@@ -82,7 +82,7 @@ class Trainer:
 
     def _new_epoch(self):
         # Shuffle the indices of the training data
-        self.permutation = np.random.permutation(len(self.train_input))
+        self.permutation = np.random.permutation(len(self.train_images))
         # Discard any indices that would result in an incomplete batch
         self.permutation = self.permutation[:len(self.permutation) - (len(self.permutation) % self.batch_size)]
 

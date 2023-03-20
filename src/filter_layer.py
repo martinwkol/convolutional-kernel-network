@@ -201,7 +201,7 @@ class FilterLayer(LayerBase):
         # Sum all extracted patches to their original position
         channel_offset = 0
         for x_diff, y_diff in itertools.product(range(self.filter_size[0]), range(self.filter_size[1])):
-            start_channel = x_diff * self.filter_size[1] + y_diff
+            start_channel = (x_diff * self.filter_size[1] + y_diff) * self.in_channels
             end_channel = start_channel + self.in_channels
 
             adj_patched[:, 

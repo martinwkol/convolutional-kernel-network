@@ -97,8 +97,6 @@ class LayerTest(unittest.TestCase):
             [1, 0],     [1, 3],     [1, 0]
         ]).transpose()
 
-        print(adj.transpose())
-
         self.assertTrue((adj == expectedAdj).all())
 
     def test_extract_patches_adj_with_zero_padding(self):
@@ -122,9 +120,6 @@ class LayerTest(unittest.TestCase):
             [6, 12],    [9, 9],     [6, 0], 
             [4, 4],     [6, 0],     [4, 0]
         ]).transpose()
-
-        #print(adj.transpose())
-
         
         self.assertTrue((adj == expectedAdj).all())
 

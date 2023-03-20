@@ -1,5 +1,7 @@
 import numpy as np
 from gradient_calculation_info import GradientCalculationInfo
+from layer_base import LayerBase
+import pickle
 
 class Network:
     def __init__(self, input_size, in_channels, layer_infos, output_nodes, output_weights = None):
@@ -59,3 +61,45 @@ class Network:
             gradients[i], gci = self.layers[i].compute_gradient(gci)
         
         return gradients
+
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        pickle.dump(len(self.layers), file)
+        for layer in self.layers:
+            layer.save_to_file(file)
+        
+        pickle.dump(
+            (
+                self.output_weights,
+                self.last_input,
+                self.last_output
+            ), 
+            file
+        )
+
+    @staticmethod
+    def load_from_file(file):
+        if isinstance(file, str):
+            with open(file, "rb") as f:
+                return Network.load_from_file(f)
+        
+        layers = []
+        num_layers = pickle.load(file)
+        for _ in range(num_layers):
+            layers.append(LayerBase.load_from_file(file))
+
+        (
+            output_weights,
+            last_input,
+            last_output
+        ) = pickle.load(file)
+
+        network = Network.__new__(Network)
+        network.layers = layers
+        network.output_weights = output_weights
+        network.last_input = last_input
+        network.last_output = last_output
+        return network

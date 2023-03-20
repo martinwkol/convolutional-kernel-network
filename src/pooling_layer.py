@@ -1,6 +1,7 @@
 import numpy as np
 from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
+import pickle
 
 class PoolingLayer(LayerBase):
     def __init__(self, input_size, in_channels, pooling_size):
@@ -93,3 +94,35 @@ class PoolingLayer(LayerBase):
 
         # Return the upscaled tensor
         return upscaled
+
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        file.write(f"{PoolingLayer.__name__}\n".encode())
+        pickle.dump(
+            (
+                self.input_size, 
+                self.in_channels, 
+                self.pooling_size, 
+                self.last_output,
+            ), 
+            file
+        )
+
+    @staticmethod
+    def _derived_load_from_file(file):
+        (
+            input_size, 
+            in_channels, 
+            pooling_size, 
+            last_output,
+        ) = pickle.load(file)
+
+        pooling_layer = PoolingLayer(input_size, in_channels, pooling_size)
+        pooling_layer.last_output = last_output
+
+        return pooling_layer
+
+LayerBase.register_derived(PoolingLayer)

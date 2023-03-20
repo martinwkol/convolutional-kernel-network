@@ -2,6 +2,7 @@ import numpy as np
 from layer_base import LayerBase
 from gradient_calculation_info import GradientCalculationInfo
 import itertools
+import pickle
 
 class FilterLayer(LayerBase):
     def __init__(self, input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding = (0, 0)):
@@ -34,7 +35,7 @@ class FilterLayer(LayerBase):
         self._S_n1_diag = None
 
         # Z^T E(input) S^-1
-        self._Z_T__E_input__S_n1 = None
+        self._Z_T__E_input__S_n1 = None    
 
     @property
     def filter_matrix(self):
@@ -221,4 +222,56 @@ class FilterLayer(LayerBase):
         adj_patched = adj_patched.reshape(-1, self.input_size[0] * self.input_size[1])
         return adj_patched
 
-    
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        file.write(f"{FilterLayer.__name__}\n".encode())
+        pickle.dump(
+            (
+                self.input_size, 
+                self.in_channels, 
+                self.filter_size, 
+                self.filter_matrix, 
+                self.dp_kernel, 
+                self.zero_padding,
+                self.last_input,
+                self.last_output,
+                self._E_input,
+                self._S_diag,
+                self._S_n1_diag,
+                self._Z_T__E_input__S_n1,
+            ), 
+            file
+        )
+
+    @staticmethod
+    def _derived_load_from_file(file):
+        (
+            input_size, 
+            in_channels, 
+            filter_size, 
+            filter_matrix, 
+            dp_kernel, 
+            zero_padding,
+            last_input,
+            last_output,
+            _E_input,
+            _S_diag,
+            _S_n1_diag,
+            _Z_T__E_input__S_n1,
+        ) = pickle.load(file)
+
+        filter_layer = FilterLayer(input_size, in_channels, filter_size, filter_matrix, dp_kernel, zero_padding)
+        filter_layer.last_input = last_input
+        filter_layer.last_output = last_output
+        filter_layer._E_input = _E_input
+        filter_layer._S_diag = _S_diag
+        filter_layer._S_n1_diag = _S_n1_diag
+        filter_layer._Z_T__E_input__S_n1 = _Z_T__E_input__S_n1
+
+        return filter_layer
+
+
+LayerBase.register_derived(FilterLayer)

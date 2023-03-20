@@ -2,6 +2,7 @@ import numpy as np
 import math
 import pickle
 from textwrap import dedent
+from trainer import Trainer
 
 class TestResult:
     def __init__(self, network_pred):
@@ -66,24 +67,6 @@ class Analysis:
 
         return analysis
 
-    def save(self, filepath):
-        f = open(filepath, "wb")
-        pickle.dump(self, f)
-        f.close()
-
-    def __getstate__(self):
-        # Exclude the specified attributes from the pickled object
-        excluded_attributes = ["test_images", "test_labels"]
-        return {k: v for k, v in self.__dict__.items() if k not in excluded_attributes}
-
-    def __setstate__(self, state):
-        # Load the pickled object
-        self.__dict__ = state
-        
-        # Set excluded attributes to None if they don't exist
-        self.test_images = getattr(self, "test_images", None)
-        self.test_labels = getattr(self, "test_labels", None)
-
     def perform_analysis(self, epochs, batches_per_test=math.inf, num_tests_batch=math.inf, num_tests_epoch=math.inf):
         batches_per_test = min(batches_per_test, self.trainer.epoch_size)
         num_tests_batch = min(num_tests_batch, len(self.test_images))
@@ -114,3 +97,37 @@ class Analysis:
         return TestResult(network_pred)
 
 
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        self.trainer.save_to_file(file)
+        pickle.dump(
+            (
+                self.num_labels,
+                self.test_results_epoch,
+                self.test_results_batch,
+            ),
+            file
+        )
+
+    @staticmethod
+    def load_from_file(file, train_images, train_labels, test_images, test_labels):
+        if isinstance(file, str):
+            with open(file, "rb") as f:
+                return Analysis.load_from_file(f, train_images, train_labels, test_images, test_labels)
+        
+        analysis = Analysis.__new__(Analysis)
+
+        analysis.trainer = Trainer.load_from_file(file, train_images, train_labels)
+        (
+            analysis.num_labels,
+            analysis.test_results_epoch,
+            analysis.test_results_batch,
+        ) = pickle.load(file)
+
+        analysis.test_images = test_images
+        analysis.test_labels = test_labels
+
+        return analysis

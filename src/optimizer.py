@@ -1,5 +1,7 @@
 from copy import deepcopy
 import numpy as np
+from network import Network
+import pickle
 
 class Optimizer:
     def __init__(self, network, loss_function):
@@ -63,3 +65,39 @@ class Optimizer:
         self.loss_sum = 0
         self.gradient_sum = None
         self.num_steps = 0
+
+    def save_to_file(self, file):
+        if isinstance(file, str):
+            with open(file, "wb") as f:
+                return self.save_to_file(f)
+        
+        self.network.save_to_file(file)
+        pickle.dump(
+            (
+                self.loss_function,
+                self.loss_sum,
+                self.gradient_sum,
+                self.num_steps
+            ), 
+            file
+        )
+
+    @staticmethod
+    def load_from_file(file):
+        if isinstance(file, str):
+            with open(file, "rb") as f:
+                return Optimizer.load_from_file(f)
+        
+        network = Network.load_from_file(file)
+        (
+            loss_function,
+            loss_sum,
+            gradient_sum,
+            num_steps
+        ) = pickle.load(file)
+
+        optimizer = Optimizer(network, loss_function)
+        optimizer.loss_sum = loss_sum
+        optimizer.gradient_sum = gradient_sum
+        optimizer.num_steps = num_steps
+        return optimizer

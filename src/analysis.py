@@ -84,20 +84,22 @@ class Analysis:
         self.test_images = getattr(self, "test_images", None)
         self.test_labels = getattr(self, "test_labels", None)
 
-    def perform_analysis(self, epochs, batches_per_test=math.inf, num_test=math.inf):
+    def perform_analysis(self, epochs, batches_per_test=math.inf, num_tests_batch=math.inf, num_tests_epoch=math.inf):
         batches_per_test = min(batches_per_test, self.trainer.epoch_size)
+        num_tests_batch = min(num_tests_batch, len(self.test_images))
+        num_tests_epoch = min(num_tests_epoch, len(self.test_images))
         batch_counter = 0
         for _ in range(epochs):
             while True:
                 self.trainer.finish_batch()
                 batch_counter += 1
                 if batch_counter >= batches_per_test:
-                    test_result = self.perform_test(num_test)
+                    test_result = self.perform_test(num_tests_batch)
                     self.test_results_batch.append(test_result)
                     batch_counter = 0
 
                 if self.trainer.epoch_counter == 0:
-                    test_result = self.perform_test()
+                    test_result = self.perform_test(num_tests_epoch)
                     self.test_results_epoch.append(test_result)
                     break
 

@@ -3,19 +3,13 @@ import os
 import math
 
 # Third-party library imports
-import numpy as np
 from mnist import MNIST
-from matplotlib import pyplot as plt
 
 # Local imports
 import kernel
 import layer_info as li
-import network
-import loss_function
-import optimizer as op
-import trainer as tr
 from analysis import Analysis
-from main_train import create_mnist_trainer
+from train_mnist import create_mnist_trainer
 
 
 def create_analysis(mnist, filepath, epochs, trainer, batches_per_test=100, num_tests_batch=1000, num_tests_epoch=math.inf):

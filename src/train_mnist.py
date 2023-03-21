@@ -1,12 +1,11 @@
 # Standard library imports
-import os, sys
+import os
 import argparse
 import math
 
 # Third-party library imports
 import numpy as np
 from mnist import MNIST
-from matplotlib import pyplot as plt
 
 # Local imports
 import kernel
@@ -15,7 +14,6 @@ import network
 import loss_function
 import optimizer as op
 import trainer as tr
-from analysis import Analysis
 from trainer import Trainer
 
 
@@ -55,6 +53,7 @@ def train_network(trainer, filepath, test_images, test_labels, epochs, num_tests
             print(f"[E{trainer.epoch}, {trainer.epoch_counter}]", end='\r')
             trainer.finish_batch()
             if trainer.epoch_counter == 0:
+                print(' ' * 50, end='\r')
                 break
         
         trainer.save_to_file(filepath)
@@ -66,24 +65,20 @@ def train_network(trainer, filepath, test_images, test_labels, epochs, num_tests
 
 def main():
     parser = argparse.ArgumentParser(description='Train a convolutional kernel network on the MNIST dataset')
-    parser.add_argument('-f', help='Path to the file for the trainer', type=str, dest="filepath")
-    parser.add_argument('-m', help='Path to the directory of the mnist dataset', type=str, dest="mnist_dir", default='mnist')
-    parser.add_argument('-e', help='Number of epochs the networks is supposed to be trained for', type=int, dest="epochs", default=10)
-    parser.add_argument('-nt', help="Number of tests to perform (<= 0 for all tests)", type=int, dest="num_tests", default=-1)
-    parser.add_argument('-et', help="Number of epochs between tests (<= for no tests)", type=int, dest="epochs_btw_tests", default=1)
-    parser.add_argument('--initial-test', help="Perform a test of the network before starting with training", action='store_true', dest='initial_test')
+    parser.add_argument('-f', help='filepath for the trainer (creates new trainer if not existent)', type=str, dest="filepath", required=True)
+    parser.add_argument('-m', help='path to the directory of the mnist dataset (downloads mnist dataset if not existent)', type=str, dest="mnist_dir", default='mnist')
+    parser.add_argument('-e', help='number of epochs the networks is supposed to be trained for', type=int, dest="epochs", default=math.inf)
+    parser.add_argument('-nt', help="number of tests to perform (<= 0 for all tests)", type=int, dest="num_tests", default=-1)
+    parser.add_argument('-et', help="number of epochs between tests (<= for no tests)", type=int, dest="epochs_btw_tests", default=1)
+    parser.add_argument('--initial-test', help="perform a test of the network before starting with training", action='store_true', dest='initial_test')
     args = parser.parse_args()
 
-    filepath = args.filepath
+    filepath = os.path.realpath(args.filepath)
     mnist_dir = args.mnist_dir
     epochs = args.epochs
     num_tests = args.num_tests if args.num_tests > 0 else math.inf
     epochs_btw_tests = args.epochs_btw_tests if args.epochs_btw_tests > 0 else math.inf
     initial_test = args.initial_test
-
-    if not filepath:
-        print("Error: No filepath for the trainer provided")
-        exit()
 
     mnist = MNIST(directory=mnist_dir)
 

@@ -24,10 +24,14 @@ class FilterInfo(LayerInfoBase):
             return filter_matrix / norms
 
         def zero_padding_str2tuple(zero_padding):
-            return \
-                (0, 0) if zero_padding == 'none' else \
-                (self.filter_size[0] // 2, self.filter_size[1] // 2) if zero_padding == 'same' else \
-                zero_padding
+            if isinstance(zero_padding, str):
+                if zero_padding == 'none':
+                    return (0, 0)
+                if zero_padding == 'same':
+                    return (self.filter_size[0] // 2, self.filter_size[1] // 2)
+                raise TypeError(f"'{zero_padding}' is not a tuple of integers or 'same' or 'none'")
+            
+            return zero_padding
 
         filter_matrix = self.filter_matrix if self.filter_matrix is not None else create_random_filter_matrix()
         filter_matrix = norm_filter_matrix(filter_matrix)

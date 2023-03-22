@@ -51,7 +51,7 @@ class FilterLayer(LayerBase):
         self._k_d_Z_T__Z = self.dp_kernel.deriv(self._Z_T__Z)
         k_Z_T__Z__eI = self.dp_kernel.func(self._Z_T__Z) + np.diag(np.full(self._Z_T__Z.shape[0], 0.001))
 
-        # Calculate A, A^(1/2), and A^(3/2)
+        # Calculate A = (k(Z^T Z) + eI)^{-1/2}, A^(1/2), and A^(3/2)
         evalues, evectors = np.linalg.eigh(k_Z_T__Z__eI)
         evalues_n1_4 = np.power(evalues, -1/4)
         evalues_n1_2 = evalues_n1_4 * evalues_n1_4
@@ -98,10 +98,10 @@ class FilterLayer(LayerBase):
 
         U = self._h(gci.U_upscaled, B)
         new_info = GradientCalculationInfo(
-            last_output_after_pooling=self.last_input, 
+            last_output_after_pooling=self.last_input, # = I_{j-1} = M_{j-1} P_{j-1}
             U=U, 
             U_upscaled=U,
-            layer_number=gci.layer_number-1
+            layer_number=gci.layer_number-1 # j-1
         )
         return gradient, new_info
 
@@ -118,9 +118,9 @@ class FilterLayer(LayerBase):
         return self.dp_kernel.deriv(self._Z_T__E_input__S_n1) * (self._A @ U_upscaled)
 
 
-    def _calculate_C(self, U, next_filter_layer_input):
-        # C = A^1/2 output U^T A^3/2
-        return (self._A_1_2 @ next_filter_layer_input) @ (U.transpose() @ self._A_3_2)
+    def _calculate_C(self, U, last_output_after_pooling):
+        # C = A^1/2 I_j U^T A^3/2
+        return (self._A_1_2 @ last_output_after_pooling) @ (U.transpose() @ self._A_3_2)
 
 
     def _g(self, B, C):

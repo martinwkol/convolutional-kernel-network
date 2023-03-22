@@ -17,11 +17,11 @@ import trainer as tr
 from trainer import Trainer
 
 
-def create_mnist_trainer(data, model_layers):
+def create_mnist_trainer(data, model_layers, square_hinge_loss_margin=0.2, batch_size=128, learning_rate=2, regularization_parameter=1/60000):
     net = network.Network(input_size=(28, 28), in_channels=1, layer_infos=model_layers, output_nodes=10)
-    optimizer = op.Optimizer(network=net, loss_function=loss_function.SquareHingeLoss(margin=0.2))
+    optimizer = op.Optimizer(network=net, loss_function=loss_function.SquareHingeLoss(margin=square_hinge_loss_margin))
     trainer = tr.Trainer(
-        optimizer=optimizer, batch_size=128, learning_rate=2, regularization_parameter=1/60000,
+        optimizer=optimizer, batch_size=batch_size, learning_rate=learning_rate, regularization_parameter=regularization_parameter,
         train_images=data.train_images, train_labels=data.train_labels
     )
     return trainer

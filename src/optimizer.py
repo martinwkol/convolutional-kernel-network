@@ -24,7 +24,7 @@ class Optimizer:
         predicted = self.network.forward(training_input)
         self.loss_sum += self.loss_function.loss(predicted=predicted, expected=expected_output)
         loss_func_gradient = self.loss_function.gradient(self.network.last_output, expected_output)
-        gradients = self.network.gradients(loss_func_gradient)
+        gradients = self.network.compute_gradients(loss_func_gradient)
         
         if self.gradient_sum is not None:
             # Accumulate gradients if this is not the first step

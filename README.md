@@ -148,3 +148,8 @@ jupyter notebook "Mathematical background and experimental results.ipynb"
 
 * **Julien Mairal** for the original research paper.
 * The MNIST dataset for serving as a testbed for experiments.
+
+
+## License
+
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute it without restriction.

@@ -1,155 +1,100 @@
-# End-to-End Kernel Learning with Supervised Convolutional Kernel Networks
+# End-to-End Kernel Learning with Convolutional Kernel Networks
 
-This repository implements **Supervised Convolutional Kernel Networks (SCKNs)**, based on:
+This project implements and analyzes the technique described in:
 
-**Mairal, J. (2016). End-to-End Kernel Learning with Supervised Convolutional Kernel Networks.**  
-[https://doi.org/10.48550/arXiv.1605.06265](https://doi.org/10.48550/arXiv.1605.06265)
+> **Julien Mairal** (2016).  
+> _End-to-End Kernel Learning with Supervised Convolutional Kernel Networks_.  
+> [arXiv:1605.06265](https://doi.org/10.48550/arXiv.1605.06265)
 
-## Overview
+The implementation is focused on understanding the core ideas of **Convolutional Kernel Networks (CKNs)** and reproducing experimental results on the MNIST dataset.
 
-The goal of this project is to provide a modular, lightweight implementation of **Supervised Convolutional Kernel Networks (SCKNs)** for use in research and experimentation. It is implemented in pure `numpy` and avoids deep learning frameworks.
+---
 
-While the MNIST dataset is used as a default example, the core components are general and can be reused for other tasks and datasets.
+## 📂 Project Structure
 
-## Installation
+```
 
-### Requirements
+.
+├── Mathematical background and experimental results.ipynb  # Main analysis
+├── Mathematical background and experimental results.pdf    # PDF export of the notebook
+├── mnist/                                                  # MNIST dataset files
+├── README.md
+└── src/
+   ├── *.py    # Core implementation and training script
 
-- Python 3.x
-- `numpy`
-- `matplotlib` (optional, for visualizations)
+````
 
-Install dependencies with:
+- The Jupyter notebook contains:
+  - A detailed mathematical explanation of CKNs.
+  - Experiments and visualizations on MNIST.
+- The Python code in `src/` provides a working example of training a network on MNIST using the method.
 
-```sh
+---
+
+## ⚙️ Installation
+
+Requires Python 3.x. Install dependencies:
+
+```bash
 pip install numpy matplotlib
 ````
 
-## Usage
+For notebook usage:
 
-This repository is intended as a **general framework** for building and training convolutional kernel networks. You can use it to define custom architectures, datasets, loss functions, and training workflows.
-
-A complete example is provided in [`src/train_mnist.py`](src/train_mnist.py), which trains and evaluates an SCKN on the MNIST dataset.
-
-Below is a minimal outline for using the library programmatically.
-
-### 1. Load or provide input data
-
-You can use the built-in MNIST loader or prepare your own dataset in similar format.
-
-```python
-from mnist import MNIST
-mnist = MNIST(directory='mnist')
-train_images, train_labels = mnist.train_images, mnist.train_labels
-test_images, test_labels = mnist.test_images, mnist.test_labels
+```bash
+pip install jupyter
 ```
 
-### 2. Define your network architecture
+---
 
-```python
-from layer_info import FilterInfo, AvgPoolingInfo
-from kernel import RadialBasisFunction
+## 🚀 Running the Code
 
-model_layers = [
-    FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=10, dp_kernel=RadialBasisFunction(alpha=4)),
-    AvgPoolingInfo(pooling_size=(3, 3)),
-    FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=10, dp_kernel=RadialBasisFunction(alpha=4)),
-    AvgPoolingInfo(pooling_size=(3, 3)),
-    FilterInfo(filter_size=(3, 3), zero_padding='same', out_channels=10, dp_kernel=RadialBasisFunction(alpha=4)),
-]
-```
+### 🧪 To run the notebook:
 
-### 3. Train and evaluate your network
-
-```python
-from network import Network
-from loss_function import SquareHingeLoss
-from optimizer import Optimizer
-from trainer import Trainer
-
-net = Network(input_size=(28, 28), in_channels=1, layer_infos=model_layers, output_nodes=10)
-optimizer = Optimizer(network=net, loss_function=SquareHingeLoss(margin=0.2))
-trainer = Trainer(
-    optimizer=optimizer,
-    batch_size=128,
-    learning_rate=2.0,
-    regularization_parameter=1 / 60000,
-    train_images=train_images,
-    train_labels=train_labels
-)
-
-# Training loop
-for _ in range(10):
-   trainer.finish_epoch()
-
-# Evaluate accuracy
-import numpy as np
-correct = sum(
-    np.argmax(trainer.optimizer.network.forward(img)) == label
-    for img, label in zip(test_images, test_labels)
-)
-accuracy = 100.0 * correct / len(test_images)
-print(f"Test Accuracy: {accuracy:.2f}%")
-```
-
-### 4. Save and load training checkpoints
-
-```python
-trainer.save_to_file("models/my_trainer.pkl")
-
-# Later
-from trainer import Trainer
-trainer = Trainer.load_from_file("models/my_trainer.pkl", train_images, train_labels)
-```
-
-## Exploring the Theory
-
-The file [`Mathematical background and experimental results.ipynb`](./Mathematical%20background%20and%20experimental%20results.ipynb) includes:
-
-* A detailed explanation of the underlying mathematical concepts.
-* Sample visualizations and results.
-
-To run:
-
-```sh
+```bash
 jupyter notebook "Mathematical background and experimental results.ipynb"
 ```
 
-## Repository Structure
+This contains the full explanation and results.
 
-```
-.
-├── analyses
-├── Mathematical background and experimental results.ipynb
-├── Mathematical background and experimental results.pdf
-├── mnist
-├── README.md
-├── src
-│   ├── analysis.py
-│   ├── create_analyses.py
-│   ├── filter_layer.py
-│   ├── gradient_calculation_info.py
-│   ├── kernel.py
-│   ├── layer_base.py
-│   ├── layer_info.py
-│   ├── loss_function.py
-│   ├── mnist.py
-│   ├── network.py
-│   ├── optimizer.py
-│   ├── pooling_layer.py
-│   ├── trainer.py
-│   └── train_mnist.py        # Example usage
-└── test
-    ├── layer_test.py
-    └── pooling_layer_test.py
+---
+
+### 🏁 To train an example network:
+
+You can run the training script as an example of using the method:
+
+```bash
+python src/train_mnist.py -f cknet_mnist_model.pkl -e 10
 ```
 
-## Acknowledgments
+Optional arguments:
 
-* **Julien Mairal** for the original research paper.
-* The MNIST dataset for serving as a testbed for experiments.
+* `-m`: path to MNIST directory (default: `mnist/`)
+* `-e`: number of epochs
+* `-nt`: number of test samples
+* `-et`: epochs between tests
+* `--initial-test`: run a test before training starts
+
+---
+
+## 📌 Notes
+
+* This project is **not packaged as a reusable library**.
+* The code is structured for educational and analytical purposes.
+* You are free to explore or adapt the scripts in `src/` as needed.
+
+---
+
+## 🙏 Acknowledgments
+
+* Thanks to Julien Mairal for the original paper and technique.
+* The MNIST dataset is used as a benchmark for evaluation.
 
 
-## License
+---
 
-This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute it without restriction.
+## 📖 License
+
+This project is released under the **MIT License**.
+You are free to use, modify, and distribute it as you wish.
+

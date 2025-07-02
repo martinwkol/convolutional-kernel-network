@@ -20,7 +20,7 @@ The implementation is focused on understanding the core ideas of **Convolutional
 ├── mnist/                                                  # MNIST dataset files
 ├── README.md
 └── src/
-   ├── *.py    # Core implementation and training script
+   └── *.py    # Core implementation and training script
 
 ````
 
